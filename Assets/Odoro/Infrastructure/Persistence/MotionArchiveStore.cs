@@ -18,12 +18,14 @@ namespace Odoro
         private readonly string rootPath;
         private readonly string indexPath;
         private readonly MotionPayloadFileStore payloadFileStore;
+        private readonly MotionSourceClipFileStore sourceClipFileStore;
 
         public MotionArchiveStore()
         {
             rootPath = Path.Combine(Application.persistentDataPath, "OdoroArchiveV2");
             indexPath = Path.Combine(rootPath, "archive-index.json");
             payloadFileStore = new MotionPayloadFileStore();
+            sourceClipFileStore = new MotionSourceClipFileStore();
 
             Directory.CreateDirectory(rootPath);
         }
@@ -39,16 +41,28 @@ namespace Odoro
             var index = LoadIndex();
             var session = ResolveSession(index, recordingContext, existingSessionId);
             var takeId = Guid.NewGuid().ToString("N");
-            var canonicalClip = OdoroCanonicalPoseMapper.CanonicalizedClip(sourceClip);
+            var sourceBackend = captureMode == CaptureMode.Mock ? "mock" : captureMode.ToString();
+            var artifacts = MotionTakeArtifactsBuilder.Build(sourceClip, captureMode);
             var payload = MotionPayload.FromClip(
-                canonicalClip,
+                artifacts.playbackClip,
                 captureMode,
                 recordingContext,
                 sourcePlatform: "Unity",
-                sourceBackend: captureMode == CaptureMode.Mock ? "mock" : captureMode.ToString(),
+                sourceBackend: sourceBackend,
                 clipIsCanonical: true
             );
-            var localFilePath = payloadFileStore.Write(payload, takeId);
+            string localFilePath;
+            try
+            {
+                localFilePath = payloadFileStore.Write(payload, takeId);
+                sourceClipFileStore.Write(sourceClip, takeId, captureMode, "Unity", sourceBackend);
+            }
+            catch
+            {
+                payloadFileStore.Remove(takeId);
+                sourceClipFileStore.Remove(takeId);
+                throw;
+            }
             var takeIndex = NextTakeIndex(index, session.id);
 
             var record = new MotionTakeRecord
@@ -58,9 +72,9 @@ namespace Odoro
                 clipName = $"Take {takeIndex:00}",
                 takeIndex = takeIndex,
                 captureMode = captureMode,
-                durationSeconds = canonicalClip.Duration,
-                frameCount = canonicalClip.FrameCount,
-                nominalFrameRate = canonicalClip.EstimatedFrameRate,
+                durationSeconds = artifacts.playbackClip.Duration,
+                frameCount = artifacts.playbackClip.FrameCount,
+                nominalFrameRate = artifacts.playbackClip.EstimatedFrameRate,
                 barLength = recordingContext.targetBarCount,
                 beatLength = recordingContext.BeatLength,
                 startBeatOffset = startBeatOffset,
@@ -79,6 +93,11 @@ namespace Odoro
 
         public MotionClip LoadClip(string takeId)
         {
+            return LoadStoredTake(takeId).clip;
+        }
+
+        public StoredMotionTake LoadStoredTake(string takeId)
+        {
             var index = LoadIndex();
             for (var i = 0; i < index.takes.Count; i += 1)
             {
@@ -88,10 +107,52 @@ namespace Odoro
                 }
 
                 var payload = payloadFileStore.Read(index.takes[i].localFilePath);
-                return payload.ToMotionClip();
+                var playbackClip = payload.ToMotionClip();
+                MotionClip sourceClip = null;
+                if (sourceClipFileStore.Exists(takeId))
+                {
+                    sourceClip = sourceClipFileStore.Read(takeId);
+                }
+
+                return new StoredMotionTake
+                {
+                    clip = playbackClip,
+                    sourceClip = sourceClip ?? playbackClip,
+                };
             }
 
             throw new FileNotFoundException($"Take not found: {takeId}");
+        }
+
+        public RecordingSessionSummary FetchSessionSummary(string sessionId)
+        {
+            var index = LoadIndex();
+            var session = FindSession(index, sessionId);
+            if (session == null)
+            {
+                return null;
+            }
+
+            var takeCount = 0;
+            for (var i = 0; i < index.takes.Count; i += 1)
+            {
+                if (index.takes[i].sessionId == sessionId)
+                {
+                    takeCount += 1;
+                }
+            }
+
+            return new RecordingSessionSummary
+            {
+                id = session.id,
+                createdAtTicks = session.createdAtTicks,
+                bpm = session.bpm,
+                timeSignatureNumerator = session.timeSignatureNumerator,
+                timeSignatureDenominator = session.timeSignatureDenominator,
+                targetBarCount = session.targetBarCount,
+                countInBarCount = session.countInBarCount,
+                takeCount = takeCount,
+            };
         }
 
         public List<MotionTakeSummary> FetchAllTakeSummaries()

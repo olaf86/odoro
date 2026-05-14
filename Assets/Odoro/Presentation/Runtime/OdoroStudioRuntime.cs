@@ -6,10 +6,17 @@ namespace Odoro
 {
     public sealed class OdoroStudioRuntime : MonoBehaviour
     {
+        private const float ReferencePhoneWidth = 390f;
+        private const float ReferencePhoneHeight = 844f;
+        private const float PhoneAspect = ReferencePhoneWidth / ReferencePhoneHeight;
+        private const float SimulatedTopInset = 54f;
+        private const float SimulatedBottomInset = 34f;
+
         private MotionArchiveStore archiveStore;
         private IMotionSource motionSource;
         private MotionStudioInteractor interactor;
         private SkeletonView skeletonView;
+        private Camera mainCamera;
 
         private MotionRecordingContext recordingContext;
         private MotionFrame latestPreviewFrame;
@@ -61,6 +68,7 @@ namespace Odoro
 
         private void Update()
         {
+            UpdateCameraViewport();
             motionSource.Tick(Time.unscaledTime);
 
             if (screen == StudioScreen.Stage && selectedClip != null)
@@ -95,12 +103,17 @@ namespace Odoro
         {
             GuiStyles.ConfigureGuiSkin();
 
-            var width = Mathf.Min(Screen.width - 48f, 460f);
-            var height = Screen.height - 48f;
-            var area = new Rect(24f, 24f, width, height);
+            GUI.color = Palette.OuterBackground;
+            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+            GUI.color = Color.white;
 
-            GUILayout.BeginArea(area, GUIContent.none, GuiStyles.Window);
-            DrawHeader();
+            var previewRect = GetPreviewRect();
+            DrawPhoneFrame(previewRect);
+
+            var previousMatrix = GUI.matrix;
+            GUI.BeginGroup(previewRect);
+            var scale = previewRect.width / ReferencePhoneWidth;
+            GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
 
             switch (screen)
             {
@@ -118,14 +131,14 @@ namespace Odoro
                     break;
             }
 
-            GUILayout.FlexibleSpace();
-            DrawFooter();
-            GUILayout.EndArea();
+            DrawToast();
+            GUI.matrix = previousMatrix;
+            GUI.EndGroup();
         }
 
         private void ConfigureCamera()
         {
-            var mainCamera = Camera.main;
+            mainCamera = Camera.main;
             if (mainCamera == null)
             {
                 var cameraObject = new GameObject("Main Camera");
@@ -194,196 +207,204 @@ namespace Odoro
                 : archiveStore.FetchTakeSummariesInSession(currentSessionId);
         }
 
-        private void DrawHeader()
-        {
-            GUILayout.Label("Odoro Studio", GuiStyles.Title);
-            GUILayout.Label(StatusSummary(), GuiStyles.Subtitle);
-
-            if (!string.IsNullOrEmpty(transientMessage))
-            {
-                var previousColor = GUI.color;
-                GUI.color = Palette.Toast;
-                GUILayout.Label(transientMessage, GuiStyles.Toast);
-                GUI.color = previousColor;
-            }
-
-            GUILayout.Space(12f);
-        }
+        private Rect ReferenceSafeRect => new Rect(
+            0f,
+            SimulatedTopInset,
+            ReferencePhoneWidth,
+            ReferencePhoneHeight - SimulatedTopInset - SimulatedBottomInset
+        );
 
         private void DrawCaptureScreen()
         {
-            GUILayout.Label("Capture", GuiStyles.SectionTitle);
-            GUILayout.Label(
-                "Domain / Application / Infrastructure / Presentation に分け、保存モデルは native 側と同じ発想へ寄せています。",
-                GuiStyles.Body
+            var safeRect = ReferenceSafeRect;
+            var headerRect = new Rect(
+                safeRect.x + 16f,
+                safeRect.y + 12f,
+                safeRect.width - 32f,
+                138f
             );
-
-            DrawCard(() =>
+            DrawPanelArea(headerRect, GuiStyles.GlassPanel, () =>
             {
-                GUILayout.Label("Capture Mode", GuiStyles.CardLabel);
-                GUILayout.Label("Mock Full Body", GuiStyles.CardValue);
-                GUILayout.Space(8f);
-                GUILayout.Label("Recording Context", GuiStyles.CardLabel);
-                GUILayout.Label(RecordingContextSummary(), GuiStyles.CardValue);
+                GUILayout.Label(CaptureProgressTitle(), GuiStyles.CardValue);
+                GUILayout.Label(RecordingContextSummary(), GuiStyles.Subtitle);
+                GUILayout.Space(12f);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Mock Full Body", GuiStyles.Pill, GUILayout.Width(140f), GUILayout.Height(32f));
+                GUILayout.FlexibleSpace();
+                GUILayout.Label(interactor.State.statusText, GuiStyles.Pill, GUILayout.Width(170f), GUILayout.Height(32f));
+                GUILayout.EndHorizontal();
+                GUILayout.Space(12f);
+                GUILayout.Label("Swipe-less Unity preview of the native capture screen.", GuiStyles.Body);
             });
 
-            GUILayout.Space(10f);
-            GUILayout.BeginHorizontal();
-            GUI.enabled = !interactor.State.isRecording;
-            if (GUILayout.Button("Start Recording", GuiStyles.PrimaryButton, GUILayout.Height(40f)))
+            var bottomRect = new Rect(
+                safeRect.x + 20f,
+                safeRect.yMax - 176f,
+                safeRect.width - 40f,
+                156f
+            );
+            DrawPanelArea(bottomRect, GuiStyles.DarkPanel, () =>
             {
-                StartRecording();
-            }
+                GUILayout.BeginHorizontal();
+                GUI.enabled = !interactor.State.isRecording;
+                if (GUILayout.Button("Session", GuiStyles.SecondaryButton, GUILayout.Height(38f)))
+                {
+                    screen = StudioScreen.SessionSettings;
+                }
 
-            GUI.enabled = interactor.State.isRecording;
-            if (GUILayout.Button("Stop", GuiStyles.SecondaryButton, GUILayout.Height(40f)))
-            {
-                StopRecording();
-            }
+                if (GUILayout.Button("Library", GuiStyles.SecondaryButton, GUILayout.Height(38f)))
+                {
+                    RefreshLibrary();
+                    screen = StudioScreen.ClipsLibrary;
+                }
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
 
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
+                GUILayout.Space(12f);
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                GUI.enabled = !interactor.State.isRecording;
+                if (GUILayout.Button("●", GuiStyles.RecordButton, GUILayout.Width(92f), GUILayout.Height(92f)))
+                {
+                    StartRecording();
+                }
+                GUI.enabled = interactor.State.isRecording;
+                if (GUILayout.Button("■", GuiStyles.RecordStopButton, GUILayout.Width(92f), GUILayout.Height(92f)))
+                {
+                    StopRecording();
+                }
+                GUI.enabled = true;
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
 
-            GUILayout.Space(8f);
-            GUI.enabled = !interactor.State.isRecording;
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Session Settings", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
-            {
-                screen = StudioScreen.SessionSettings;
-            }
-
-            if (GUILayout.Button("Clip Library", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
-            {
-                RefreshLibrary();
-                screen = StudioScreen.ClipsLibrary;
-            }
-            GUILayout.EndHorizontal();
-            GUI.enabled = true;
-
-            GUI.enabled = selectedClip != null;
-            if (GUILayout.Button("Open Stage", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
-            {
-                screen = StudioScreen.Stage;
-            }
-            GUI.enabled = true;
-
-            GUILayout.Space(12f);
-            DrawCard(() =>
-            {
-                GUILayout.Label("Current Session", GuiStyles.CardLabel);
-                GUILayout.Label($"{currentSessionTakes.Count} takes", GuiStyles.CardValue);
-                GUILayout.Label("All Saved Takes", GuiStyles.CardLabel);
-                GUILayout.Label($"{libraryClips.Count} takes", GuiStyles.CardValue);
+                GUILayout.Space(10f);
+                GUILayout.Label(selectedClip != null ? "Latest clip ready for stage playback" : "Tap the record button to capture a take", GuiStyles.CenteredCaption);
             });
         }
 
         private void DrawSessionSettingsScreen()
         {
-            GUILayout.Label("Session Settings", GuiStyles.SectionTitle);
-            GUILayout.Label("`MotionRecordingContext` は native 側と同じく 2 小節固定キャプチャ前提です。", GuiStyles.Body);
-
-            DrawCard(() =>
-            {
-                DrawStepper("BPM", recordingContext.bpm.ToString("0"), () => AdjustBpm(-5f), () => AdjustBpm(5f));
-                DrawStepper("Numerator", recordingContext.timeSignatureNumerator.ToString(), () => AdjustNumerator(-1), () => AdjustNumerator(1));
-                DrawStepper("Denominator", recordingContext.timeSignatureDenominator.ToString(), () => AdjustDenominator(-1), () => AdjustDenominator(1));
-                DrawStepper("Count In Bars", recordingContext.countInBarCount.ToString(), () => AdjustCountInBars(-1), () => AdjustCountInBars(1));
-
-                GUILayout.Space(8f);
-                GUILayout.Label("Fixed Capture Duration", GuiStyles.CardLabel);
-                GUILayout.Label($"{recordingContext.FixedCaptureDuration:0.00} sec", GuiStyles.CardValue);
-            });
-
-            GUILayout.Space(12f);
-            if (GUILayout.Button("Back to Capture", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
+            var safeRect = ReferenceSafeRect;
+            var shellRect = new Rect(safeRect.x + 16f, safeRect.y + 10f, safeRect.width - 32f, safeRect.height - 20f);
+            DrawShellScreen(shellRect, "Session Settings", "Adjust BPM, meter, and count-in for the next take.", () =>
             {
                 screen = StudioScreen.Capture;
-            }
+            }, () =>
+            {
+                DrawCard(() =>
+                {
+                    DrawStepper("BPM", recordingContext.bpm.ToString("0"), () => AdjustBpm(-5f), () => AdjustBpm(5f));
+                    DrawStepper("Numerator", recordingContext.timeSignatureNumerator.ToString(), () => AdjustNumerator(-1), () => AdjustNumerator(1));
+                    DrawStepper("Denominator", recordingContext.timeSignatureDenominator.ToString(), () => AdjustDenominator(-1), () => AdjustDenominator(1));
+                    DrawStepper("Count In Bars", recordingContext.countInBarCount.ToString(), () => AdjustCountInBars(-1), () => AdjustCountInBars(1));
+                    GUILayout.Space(8f);
+                    GUILayout.Label("Fixed Capture Duration", GuiStyles.CardLabel);
+                    GUILayout.Label($"{recordingContext.FixedCaptureDuration:0.00} sec", GuiStyles.CardValue);
+                });
+            });
         }
 
         private void DrawLibraryScreen()
         {
-            GUILayout.Label("Clip Library", GuiStyles.SectionTitle);
-            GUILayout.Label("`.odoro.stage` payload を読み戻して、Stage で確認できます。", GuiStyles.Body);
-
-            if (libraryClips.Count == 0)
-            {
-                DrawCard(() => { GUILayout.Label("まだ保存されたテイクはありません。", GuiStyles.CardValue); });
-            }
-            else
-            {
-                libraryScrollPosition = GUILayout.BeginScrollView(libraryScrollPosition, false, true, GUILayout.Height(300f));
-                foreach (var take in libraryClips)
-                {
-                    DrawCard(() =>
-                    {
-                        GUILayout.Label(take.DisplayName, GuiStyles.CardValue);
-                        GUILayout.Label(take.SecondarySummary, GuiStyles.CardLabel);
-                        if (GUILayout.Button("Load in Stage", GuiStyles.SecondaryButton, GUILayout.Height(32f)))
-                        {
-                            LoadTake(take);
-                        }
-                    });
-                }
-                GUILayout.EndScrollView();
-            }
-
-            GUILayout.Space(12f);
-            if (GUILayout.Button("Back to Capture", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
+            var safeRect = ReferenceSafeRect;
+            var shellRect = new Rect(safeRect.x + 16f, safeRect.y + 10f, safeRect.width - 32f, safeRect.height - 20f);
+            DrawShellScreen(shellRect, "Clip Library", "Review past takes and jump back into playback.", () =>
             {
                 screen = StudioScreen.Capture;
-            }
+            }, () =>
+            {
+                if (libraryClips.Count == 0)
+                {
+                    DrawCard(() => { GUILayout.Label("No clips yet", GuiStyles.CardValue); });
+                }
+                else
+                {
+                    libraryScrollPosition = GUILayout.BeginScrollView(libraryScrollPosition, false, true, GUILayout.Height(shellRect.height - 170f));
+                    foreach (var take in libraryClips)
+                    {
+                        DrawCard(() =>
+                        {
+                            GUILayout.Label(take.DisplayName, GuiStyles.CardValue);
+                            GUILayout.Label(take.SecondarySummary, GuiStyles.CardLabel);
+                            GUILayout.Space(8f);
+                            if (GUILayout.Button("Open Playback", GuiStyles.PrimaryButton, GUILayout.Height(36f)))
+                            {
+                                LoadTake(take);
+                            }
+                        });
+                    }
+                    GUILayout.EndScrollView();
+                }
+            });
         }
 
         private void DrawStageScreen()
         {
-            GUILayout.Label("Stage", GuiStyles.SectionTitle);
-            GUILayout.Label("再生対象は canonical skeleton です。ここに後で実アバター描画を載せ替えていきます。", GuiStyles.Body);
-
-            DrawCard(() =>
+            var safeRect = ReferenceSafeRect;
+            var headerRect = new Rect(
+                safeRect.x + 16f,
+                safeRect.y + 14f,
+                safeRect.width - 32f,
+                82f
+            );
+            DrawPanelArea(headerRect, GuiStyles.DarkPanel, () =>
             {
-                GUILayout.Label("Selected Take", GuiStyles.CardLabel);
-                GUILayout.Label(selectedTake != null ? selectedTake.DisplayName : "Unsaved Preview", GuiStyles.CardValue);
-                GUILayout.Label("Playback", GuiStyles.CardLabel);
-                GUILayout.Label(selectedClip != null ? $"{selectedClip.Duration:0.00} sec / {selectedClip.FrameCount} frames" : "No clip loaded", GuiStyles.CardValue);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("‹", GuiStyles.SecondaryButton, GUILayout.Width(44f), GUILayout.Height(42f)))
+                {
+                    interactor.SetPlaybackActive(false);
+                    screen = StudioScreen.Capture;
+                }
+
+                GUILayout.Space(10f);
+                GUILayout.BeginVertical();
+                GUILayout.Label(selectedTake != null ? selectedTake.DisplayName : "Stage Playback", GuiStyles.CardValue);
+                GUILayout.Label(selectedClip != null ? $"{selectedClip.Duration:0.00}s • {selectedClip.FrameCount} frames" : "No clip loaded", GuiStyles.Subtitle);
+                GUILayout.EndVertical();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Skeleton", GuiStyles.Pill, GUILayout.Width(92f), GUILayout.Height(30f));
+                GUILayout.EndHorizontal();
             });
 
-            GUILayout.Space(10f);
-            GUILayout.BeginHorizontal();
-            GUI.enabled = selectedClip != null;
-            if (GUILayout.Button(interactor.State.isPlaying ? "Pause" : "Play", GuiStyles.PrimaryButton, GUILayout.Height(40f)))
+            var bottomRect = new Rect(
+                safeRect.x + 20f,
+                safeRect.yMax - 182f,
+                safeRect.width - 40f,
+                162f
+            );
+            DrawPanelArea(bottomRect, GuiStyles.DarkPanel, () =>
             {
-                TogglePlayback();
-            }
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Model", GuiStyles.SecondaryButton, GUILayout.Height(38f)))
+                {
+                    ShowTransientMessage("Model selection is next.");
+                }
 
-            if (GUILayout.Button("Restart", GuiStyles.SecondaryButton, GUILayout.Height(40f)))
-            {
-                playbackTime = 0f;
-                interactor.SetPlaybackActive(false);
-            }
-            GUI.enabled = true;
-            GUILayout.EndHorizontal();
+                if (GUILayout.Button("Record Again", GuiStyles.SecondaryButton, GUILayout.Height(38f)))
+                {
+                    interactor.SetPlaybackActive(false);
+                    screen = StudioScreen.Capture;
+                }
+                GUILayout.EndHorizontal();
 
-            GUILayout.Space(8f);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Clip Library", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
-            {
-                RefreshLibrary();
-                screen = StudioScreen.ClipsLibrary;
-            }
+                GUILayout.Space(12f);
+                GUILayout.BeginHorizontal();
+                GUI.enabled = selectedClip != null;
+                if (GUILayout.Button(interactor.State.isPlaying ? "Pause" : "Play", GuiStyles.SecondaryButton, GUILayout.Height(44f)))
+                {
+                    TogglePlayback();
+                }
 
-            if (GUILayout.Button("Back to Capture", GuiStyles.SecondaryButton, GUILayout.Height(36f)))
-            {
-                interactor.SetPlaybackActive(false);
-                screen = StudioScreen.Capture;
-            }
-            GUILayout.EndHorizontal();
-        }
+                if (GUILayout.Button("Save", GuiStyles.PrimaryButton, GUILayout.Height(44f)))
+                {
+                    ShowTransientMessage("Already saved after capture.");
+                }
+                GUI.enabled = true;
+                GUILayout.EndHorizontal();
 
-        private void DrawFooter()
-        {
-            GUILayout.Space(12f);
-            GUILayout.Label("Archive root: Application.persistentDataPath/OdoroArchiveV2", GuiStyles.Footnote);
+                GUILayout.Space(10f);
+                GUILayout.Label("Drag to orbit and pinch-to-zoom will come with the avatar stage pass.", GuiStyles.CenteredCaption);
+            });
         }
 
         private string StatusSummary()
@@ -428,9 +449,10 @@ namespace Odoro
             selectedTake = take;
             currentSessionId = take.sessionId;
             currentSessionTakes = archiveStore.FetchTakeSummariesInSession(currentSessionId);
-            selectedClip = archiveStore.LoadClip(take.id);
+            var storedTake = archiveStore.LoadStoredTake(take.id);
+            selectedClip = storedTake.clip;
             playbackTime = 0f;
-            interactor.ReplaceCurrentClip(selectedClip);
+            interactor.ReplaceCurrentClip(storedTake.clip, storedTake.sourceClip);
             interactor.SetPlaybackActive(false);
             screen = StudioScreen.Stage;
             ShowTransientMessage("保存済みテイクを読み込みました。");
@@ -511,6 +533,112 @@ namespace Odoro
             GUILayout.BeginVertical(GuiStyles.Card);
             content();
             GUILayout.EndVertical();
+        }
+
+        private void DrawShellScreen(Rect shellRect, string title, string subtitle, Action onBack, Action drawContent)
+        {
+            DrawPanelArea(shellRect, GuiStyles.Window, () =>
+            {
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("‹", GuiStyles.SecondaryButton, GUILayout.Width(44f), GUILayout.Height(42f)))
+                {
+                    onBack();
+                }
+
+                GUILayout.Space(10f);
+                GUILayout.BeginVertical();
+                GUILayout.Label(title, GuiStyles.SectionTitle);
+                GUILayout.Label(subtitle, GuiStyles.Subtitle);
+                GUILayout.EndVertical();
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                GUILayout.Space(16f);
+                drawContent();
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("Archive root: Application.persistentDataPath/OdoroArchiveV2", GuiStyles.Footnote);
+            });
+        }
+
+        private void DrawPanelArea(Rect rect, GUIStyle style, Action drawContent)
+        {
+            GUILayout.BeginArea(rect, GUIContent.none, style);
+            drawContent();
+            GUILayout.EndArea();
+        }
+
+        private void DrawToast()
+        {
+            if (string.IsNullOrEmpty(transientMessage))
+            {
+                return;
+            }
+
+            var safeRect = ReferenceSafeRect;
+
+            var toastRect = new Rect(
+                safeRect.x + 20f,
+                safeRect.yMax - 244f,
+                safeRect.width - 40f,
+                52f
+            );
+            GUILayout.BeginArea(toastRect, transientMessage, GuiStyles.Toast);
+            GUILayout.EndArea();
+        }
+
+        private string CaptureProgressTitle()
+        {
+            if (interactor.State.isRecording)
+            {
+                return $"Recording {interactor.State.recordingDuration:0.00}s / {recordingContext.FixedCaptureDuration:0.00}s";
+            }
+
+            return $"{recordingContext.targetBarCount} bars • {recordingContext.bpm:0} BPM";
+        }
+
+        private Rect GetPreviewRect()
+        {
+            var screenRect = new Rect(0f, 0f, Screen.width, Screen.height);
+            var width = Mathf.Min(screenRect.width, screenRect.height * PhoneAspect);
+            var height = width / PhoneAspect;
+
+            if (height > screenRect.height)
+            {
+                height = screenRect.height;
+                width = height * PhoneAspect;
+            }
+
+            return new Rect(
+                Mathf.Round((screenRect.width - width) * 0.5f),
+                Mathf.Round((screenRect.height - height) * 0.5f),
+                Mathf.Round(width),
+                Mathf.Round(height)
+            );
+        }
+
+        private void DrawPhoneFrame(Rect previewRect)
+        {
+            var shadowRect = new Rect(previewRect.x - 10f, previewRect.y - 10f, previewRect.width + 20f, previewRect.height + 20f);
+            GUI.color = new Color(0f, 0f, 0f, 0.28f);
+            GUI.Box(shadowRect, GUIContent.none, GuiStyles.PhoneFrame);
+            GUI.color = new Color(1f, 1f, 1f, 0.08f);
+            GUI.Box(previewRect, GUIContent.none, GuiStyles.PhoneFrame);
+            GUI.color = Color.white;
+        }
+
+        private void UpdateCameraViewport()
+        {
+            if (mainCamera == null)
+            {
+                return;
+            }
+
+            var previewRect = GetPreviewRect();
+            mainCamera.rect = new Rect(
+                previewRect.x / Screen.width,
+                previewRect.y / Screen.height,
+                previewRect.width / Screen.width,
+                previewRect.height / Screen.height
+            );
         }
     }
 }

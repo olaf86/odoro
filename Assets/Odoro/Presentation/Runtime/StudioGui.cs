@@ -5,6 +5,7 @@ namespace Odoro
     public static class Palette
     {
         public static readonly Color Background = new Color(0.05f, 0.07f, 0.11f);
+        public static readonly Color OuterBackground = new Color(0.02f, 0.03f, 0.05f);
         public static readonly Color CaptureSkeleton = new Color(0.35f, 0.87f, 0.95f);
         public static readonly Color StageSkeleton = new Color(1.0f, 0.62f, 0.42f);
         public static readonly Color Toast = new Color(0.18f, 0.55f, 0.36f);
@@ -26,6 +27,13 @@ namespace Odoro
         private static GUIStyle footnote;
         private static GUIStyle window;
         private static GUIStyle toast;
+        private static GUIStyle glassPanel;
+        private static GUIStyle darkPanel;
+        private static GUIStyle pill;
+        private static GUIStyle phoneFrame;
+        private static GUIStyle recordButton;
+        private static GUIStyle recordStopButton;
+        private static GUIStyle centeredCaption;
 
         public static GUIStyle Title => title ??= BuildLabel(26, FontStyle.Bold, Color.white);
         public static GUIStyle Subtitle => subtitle ??= BuildLabel(12, FontStyle.Normal, new Color(0.74f, 0.80f, 0.86f));
@@ -41,6 +49,13 @@ namespace Odoro
         public static GUIStyle Footnote => footnote ??= BuildLabel(11, FontStyle.Normal, new Color(0.61f, 0.67f, 0.73f));
         public static GUIStyle Window => window ??= BuildWindow();
         public static GUIStyle Toast => toast ??= BuildToast();
+        public static GUIStyle GlassPanel => glassPanel ??= BuildPanel(new Color(0.14f, 0.17f, 0.22f, 0.78f), 24);
+        public static GUIStyle DarkPanel => darkPanel ??= BuildPanel(new Color(0.04f, 0.05f, 0.08f, 0.62f), 26);
+        public static GUIStyle Pill => pill ??= BuildPill();
+        public static GUIStyle PhoneFrame => phoneFrame ??= BuildPhoneFrame();
+        public static GUIStyle RecordButton => recordButton ??= BuildRecordButton(false);
+        public static GUIStyle RecordStopButton => recordStopButton ??= BuildRecordButton(true);
+        public static GUIStyle CenteredCaption => centeredCaption ??= BuildLabel(12, FontStyle.Normal, new Color(0.86f, 0.89f, 0.92f), TextAnchor.MiddleCenter);
 
         public static void ConfigureGuiSkin()
         {
@@ -100,6 +115,16 @@ namespace Odoro
             };
         }
 
+        private static GUIStyle BuildPanel(Color color, int padding)
+        {
+            return new GUIStyle(GUI.skin.box)
+            {
+                normal = { background = MakeTexture(color) },
+                padding = new RectOffset(padding - 4, padding - 4, padding - 6, padding - 6),
+                margin = new RectOffset(0, 0, 0, 0),
+            };
+        }
+
         private static GUIStyle BuildToast()
         {
             return new GUIStyle(GUI.skin.box)
@@ -113,6 +138,54 @@ namespace Odoro
                     textColor = Color.white,
                 },
             };
+        }
+
+        private static GUIStyle BuildPill()
+        {
+            var style = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(12, 12, 8, 8),
+                normal =
+                {
+                    background = MakeTexture(new Color(0f, 0f, 0f, 0.34f)),
+                    textColor = Color.white,
+                },
+            };
+            return style;
+        }
+
+        private static GUIStyle BuildPhoneFrame()
+        {
+            return new GUIStyle(GUI.skin.box)
+            {
+                normal = { background = MakeTexture(new Color(1f, 1f, 1f, 0.04f)) },
+                border = new RectOffset(2, 2, 2, 2),
+                margin = new RectOffset(0, 0, 0, 0),
+                padding = new RectOffset(0, 0, 0, 0),
+            };
+        }
+
+        private static GUIStyle BuildRecordButton(bool isRecording)
+        {
+            var style = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                padding = new RectOffset(16, 16, 28, 28),
+                richText = true,
+            };
+            var color = isRecording ? new Color(0.86f, 0.19f, 0.22f) : Color.white;
+            style.normal.background = MakeTexture(color);
+            style.hover.background = MakeTexture(color * 1.04f);
+            style.active.background = MakeTexture(color * 0.92f);
+            style.normal.textColor = isRecording ? Color.white : new Color(0.82f, 0.16f, 0.22f);
+            style.hover.textColor = style.normal.textColor;
+            style.active.textColor = style.normal.textColor;
+            return style;
         }
 
         private static Texture2D MakeTexture(Color color)

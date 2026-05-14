@@ -77,6 +77,31 @@ namespace Odoro
     }
 
     [Serializable]
+    public sealed class RecordingSessionSummary
+    {
+        public string id;
+        public long createdAtTicks;
+        public float bpm;
+        public int timeSignatureNumerator;
+        public int timeSignatureDenominator;
+        public int targetBarCount;
+        public int countInBarCount;
+        public int takeCount;
+
+        public MotionRecordingContext RecordingContext => new MotionRecordingContext
+        {
+            tempoSourceType = TempoSourceType.Metronome,
+            audioAssetReference = null,
+            bpm = bpm,
+            timeSignatureNumerator = timeSignatureNumerator,
+            timeSignatureDenominator = timeSignatureDenominator,
+            targetBarCount = targetBarCount,
+            countInBarCount = countInBarCount,
+            notes = null,
+        };
+    }
+
+    [Serializable]
     public sealed class MotionTakeSummary
     {
         public string id;
@@ -125,6 +150,13 @@ namespace Odoro
             countInBarCount = countInBarCount,
             notes = null,
         };
+    }
+
+    [Serializable]
+    public sealed class StoredMotionTake
+    {
+        public MotionClip clip;
+        public MotionClip sourceClip;
     }
 
     [Serializable]

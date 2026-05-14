@@ -32,6 +32,15 @@ namespace Odoro
             return JsonUtility.FromJson<MotionPayload>(File.ReadAllText(path));
         }
 
+        public void Remove(string takeId)
+        {
+            var path = PayloadPathFor(takeId);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+
         private void EnsureDirectoryExists()
         {
             if (!Directory.Exists(baseDirectoryPath))

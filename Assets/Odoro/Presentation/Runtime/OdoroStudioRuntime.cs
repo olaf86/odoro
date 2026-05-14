@@ -16,6 +16,7 @@ namespace Odoro
         private IMotionSource motionSource;
         private MotionStudioInteractor interactor;
         private SkeletonView skeletonView;
+        private HumanoidAvatarView avatarView;
         private Camera mainCamera;
 
         private MotionRecordingContext recordingContext;
@@ -53,6 +54,7 @@ namespace Odoro
             motionSource = new MockMotionSource();
             interactor = new MotionStudioInteractor(motionSource, recordingContext.FixedCaptureDuration);
             skeletonView = new SkeletonView("Odoro Skeleton View");
+            avatarView = HumanoidAvatarView.TryCreateFromResources();
 
             ConfigureCamera();
             ConfigureInteractor();
@@ -64,6 +66,7 @@ namespace Odoro
         {
             motionSource?.Deactivate();
             skeletonView?.Dispose();
+            avatarView?.Dispose();
         }
 
         private void Update()
@@ -86,10 +89,20 @@ namespace Odoro
                     }
                 }
 
-                skeletonView.SetFrame(selectedClip.Sample(playbackTime), Palette.StageSkeleton);
+                var sampledFrame = selectedClip.Sample(playbackTime);
+                if (avatarView != null && avatarView.IsAvailable)
+                {
+                    avatarView.SetFrame(sampledFrame);
+                    skeletonView.SetFrame(null, Palette.StageSkeleton);
+                }
+                else
+                {
+                    skeletonView.SetFrame(sampledFrame, Palette.StageSkeleton);
+                }
             }
             else
             {
+                avatarView?.SetVisible(false);
                 skeletonView.SetFrame(latestPreviewFrame, Palette.CaptureSkeleton);
             }
 
@@ -362,7 +375,7 @@ namespace Odoro
                 GUILayout.Label(selectedClip != null ? $"{selectedClip.Duration:0.00}s • {selectedClip.FrameCount} frames" : "No clip loaded", GuiStyles.Subtitle);
                 GUILayout.EndVertical();
                 GUILayout.FlexibleSpace();
-                GUILayout.Label("Skeleton", GuiStyles.Pill, GUILayout.Width(92f), GUILayout.Height(30f));
+                GUILayout.Label(avatarView != null && avatarView.IsAvailable ? "Avatar" : "Skeleton", GuiStyles.Pill, GUILayout.Width(92f), GUILayout.Height(30f));
                 GUILayout.EndHorizontal();
             });
 
@@ -377,7 +390,11 @@ namespace Odoro
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Model", GuiStyles.SecondaryButton, GUILayout.Height(38f)))
                 {
-                    ShowTransientMessage("Model selection is next.");
+                    ShowTransientMessage(
+                        avatarView != null && avatarView.IsAvailable
+                            ? "Default humanoid avatar is active."
+                            : "Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable avatar preview."
+                    );
                 }
 
                 if (GUILayout.Button("Record Again", GuiStyles.SecondaryButton, GUILayout.Height(38f)))

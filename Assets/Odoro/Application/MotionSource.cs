@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Odoro
 {
@@ -13,5 +14,11 @@ namespace Odoro
         void Activate(MotionSourceActivity activity);
         void Deactivate();
         void Tick(float now);
+    }
+
+    public interface IPrimaryCameraSource
+    {
+        Camera PrimaryCamera { get; }
+        bool ManagesCamera { get; }
     }
 }

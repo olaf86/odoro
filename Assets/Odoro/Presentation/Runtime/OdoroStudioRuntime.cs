@@ -51,8 +51,12 @@ namespace Odoro
 
             recordingContext = MotionRecordingContext.DefaultMetronomeLoop.NormalizedForFixedCaptureLength();
             archiveStore = new MotionArchiveStore();
-            motionSource = new MockMotionSource();
-            interactor = new MotionStudioInteractor(motionSource, recordingContext.FixedCaptureDuration);
+            motionSource = CreateMotionSource();
+            interactor = new MotionStudioInteractor(
+                motionSource,
+                recordingContext.FixedCaptureDuration,
+                new StudioPlaybackCapturedClipPreparer(motionSource.CaptureMode)
+            );
             skeletonView = new SkeletonView("Odoro Skeleton View");
             avatarView = HumanoidAvatarView.TryCreateFromResources();
 
@@ -151,6 +155,12 @@ namespace Odoro
 
         private void ConfigureCamera()
         {
+            if (motionSource is IPrimaryCameraSource providedCameraSource && providedCameraSource.ManagesCamera)
+            {
+                mainCamera = providedCameraSource.PrimaryCamera;
+                return;
+            }
+
             mainCamera = Camera.main;
             if (mainCamera == null)
             {
@@ -165,6 +175,21 @@ namespace Odoro
             mainCamera.orthographicSize = 1.25f;
             mainCamera.transform.position = new Vector3(0f, 0.95f, -10f);
             mainCamera.transform.rotation = Quaternion.identity;
+        }
+
+        private IMotionSource CreateMotionSource()
+        {
+#if UNITY_IOS && !UNITY_EDITOR
+            var arSource = gameObject.AddComponent<ArFoundationBodyMotionSource>();
+            if (arSource.IsSupported)
+            {
+                return arSource;
+            }
+
+            Destroy(arSource);
+#endif
+
+            return new MockMotionSource();
         }
 
         private void ConfigureInteractor()
@@ -242,7 +267,7 @@ namespace Odoro
                 GUILayout.Label(RecordingContextSummary(), GuiStyles.Subtitle);
                 GUILayout.Space(12f);
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Mock Full Body", GuiStyles.Pill, GUILayout.Width(140f), GUILayout.Height(32f));
+                GUILayout.Label(CaptureModeLabel(), GuiStyles.Pill, GUILayout.Width(140f), GUILayout.Height(32f));
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(interactor.State.statusText, GuiStyles.Pill, GUILayout.Width(170f), GUILayout.Height(32f));
                 GUILayout.EndHorizontal();
@@ -610,6 +635,17 @@ namespace Odoro
             }
 
             return $"{recordingContext.targetBarCount} bars • {recordingContext.bpm:0} BPM";
+        }
+
+        private string CaptureModeLabel()
+        {
+            return motionSource.CaptureMode switch
+            {
+                CaptureMode.RearBody3D => "AR Body 3D",
+                CaptureMode.FrontUpperBody => "Front Upper",
+                CaptureMode.ImportedVideo => "Imported Video",
+                _ => "Mock Full Body",
+            };
         }
 
         private Rect GetPreviewRect()

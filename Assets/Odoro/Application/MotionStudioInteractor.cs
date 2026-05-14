@@ -16,14 +16,20 @@ namespace Odoro
         public event Action<MotionClip> OnRecordingCompleted;
 
         private readonly IMotionSource source;
+        private readonly ICapturedClipPreparer capturedClipPreparer;
         private readonly List<MotionFrame> capturedFrames = new List<MotionFrame>();
         private float maximumCaptureDuration;
         private float firstFrameTimestamp = -1f;
 
-        public MotionStudioInteractor(IMotionSource source, float maximumCaptureDuration)
+        public MotionStudioInteractor(
+            IMotionSource source,
+            float maximumCaptureDuration,
+            ICapturedClipPreparer capturedClipPreparer
+        )
         {
             this.source = source;
             this.maximumCaptureDuration = maximumCaptureDuration;
+            this.capturedClipPreparer = capturedClipPreparer;
             source.OnFrame += Consume;
         }
 
@@ -64,12 +70,12 @@ namespace Odoro
             SourceClip = sourceClip;
             OnSourceClipChanged?.Invoke(SourceClip);
 
-            var canonicalClip = OdoroCanonicalPoseMapper.CanonicalizedClip(sourceClip);
-            ReplaceCurrentClip(canonicalClip, sourceClip);
+            var playbackClip = capturedClipPreparer.PrepareCapturedClip(sourceClip);
+            ReplaceCurrentClip(playbackClip, sourceClip);
 
             State.statusText = "キャプチャが完了しました。";
             PublishState();
-            OnRecordingCompleted?.Invoke(canonicalClip);
+            OnRecordingCompleted?.Invoke(playbackClip);
         }
 
         public void ReplaceCurrentClip(MotionClip clip, MotionClip sourceClip = null)

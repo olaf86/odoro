@@ -6,6 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes: []
   m_configObjects:
+    com.unity.addressableassets: {fileID: 11400000, guid: fbbdcaabf5f7a46498970abbf4b1cb0c, type: 2}
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 289c1b55c9541489481df5cc06664110, type: 3}
+    com.unity.localization.settings: {fileID: 11400000, guid: de76c98c35c324a06b82913b027e4bc0, type: 2}
     com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 8d704bfb63de44e0fa50353ecef9b9fe, type: 2}

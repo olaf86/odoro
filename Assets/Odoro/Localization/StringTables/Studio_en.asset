@@ -1,0 +1,261 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Studio_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 811f3585d647c41f8812ecf0177b840b, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 238018560
+    m_Localized: Capture
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212864
+    m_Localized: Recording Session
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212865
+    m_Localized: Adjust BPM, meter, and count-in before the next take.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212866
+    m_Localized: BPM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212867
+    m_Localized: Numerator
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212868
+    m_Localized: Denominator
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212869
+    m_Localized: Count-In Bars
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212870
+    m_Localized: Fixed Capture Duration
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212871
+    m_Localized: Clip Library
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212872
+    m_Localized: Review past takes and jump back into playback.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212873
+    m_Localized: No clips yet.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212874
+    m_Localized: Stage Playback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212875
+    m_Localized: No clip loaded
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212876
+    m_Localized: Avatar
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212877
+    m_Localized: Skeleton
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212878
+    m_Localized: AR capture preview with session controls.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212879
+    m_Localized: Latest clip is ready. Open Stage to preview the take.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212880
+    m_Localized: Tap Record to capture the first take.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212881
+    m_Localized: Humanoid avatar preview is active.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212882
+    m_Localized: Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable
+      avatar preview.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212883
+    m_Localized: Open Playback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212884
+    m_Localized: Library
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212885
+    m_Localized: Stage
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212886
+    m_Localized: Record
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212887
+    m_Localized: Stop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212888
+    m_Localized: Back
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212889
+    m_Localized: Model
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212890
+    m_Localized: Record Again
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212891
+    m_Localized: Save
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212892
+    m_Localized: Play
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212893
+    m_Localized: Pause
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212894
+    m_Localized: 'Archive root: Application.persistentDataPath/OdoroArchiveV2'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212895
+    m_Localized: Preview is ready.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212896
+    m_Localized: Recording motion...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212897
+    m_Localized: Not enough frames were captured.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212898
+    m_Localized: Capture complete.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212899
+    m_Localized: Showing the mock preview.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212900
+    m_Localized: Recording with the mock source.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212901
+    m_Localized: Preparing AR body tracking...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212902
+    m_Localized: Body detected. Ready to record.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212903
+    m_Localized: Looking for a full body in frame.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212904
+    m_Localized: AR body tracking is unavailable on this device.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212905
+    m_Localized: Saved a new take.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212906
+    m_Localized: Failed to save. Check the Console.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212907
+    m_Localized: Record a take first.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212908
+    m_Localized: Default humanoid avatar is active.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212909
+    m_Localized: Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable
+      avatar preview.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212910
+    m_Localized: This take is already saved after capture.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212911
+    m_Localized: Recording started.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212912
+    m_Localized: Loaded the saved take.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212913
+    m_Localized: AR Body 3D
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212914
+    m_Localized: Front Upper
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212915
+    m_Localized: Imported Video
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212916
+    m_Localized: Mock Full Body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212917
+    m_Localized: Recording {0:0.00}s / {1:0.00}s
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212918
+    m_Localized: "{0} bars \u2022 {1:0} BPM"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212919
+    m_Localized: "{0:0.00}s \u2022 {1} frames"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212920
+    m_Localized: "{0} BPM \u2022 {1}/{2} \u2022 {3} bars"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 242212921
+    m_Localized: '{0:0.00} sec'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

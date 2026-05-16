@@ -339,7 +339,7 @@ namespace Odoro
             captureModeLabel.text = snapshot.captureModeLabel;
             captureStatusLabel.text = snapshot.captureStatus;
             sessionSummaryLabel.text = StudioL10n.RecordingSessionSummary(
-                snapshot.recordingContext.bpm,
+                Mathf.RoundToInt(snapshot.recordingContext.bpm),
                 snapshot.recordingContext.timeSignatureNumerator,
                 snapshot.recordingContext.timeSignatureDenominator,
                 snapshot.recordingContext.countInBarCount

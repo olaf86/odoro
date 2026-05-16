@@ -86,8 +86,8 @@ namespace Odoro.Editor
                 var englishTable = EnsureTable(collection, english);
                 var japaneseTable = EnsureTable(collection, japanese);
 
-                var changed = SyncTableEntries(englishTable, locale => locale.english);
-                changed |= SyncTableEntries(japaneseTable, locale => locale.japanese);
+                var changed = SeedMissingEntries(englishTable, entry => entry.english);
+                changed |= SeedMissingEntries(japaneseTable, entry => entry.japanese);
 
                 if (changed)
                 {
@@ -175,24 +175,19 @@ namespace Odoro.Editor
             return collection.AddNewTable(locale.Identifier) as StringTable;
         }
 
-        private static bool SyncTableEntries(StringTable table, System.Func<StudioL10nEntryDefinition, string> selector)
+        private static bool SeedMissingEntries(StringTable table, System.Func<StudioLocalizationSeedEntry, string> selector)
         {
             var changed = false;
 
-            for (var i = 0; i < StudioL10n.Entries.Count; i += 1)
+            for (var i = 0; i < StudioLocalizationSeed.Entries.Length; i += 1)
             {
-                var definition = StudioL10n.Entries[i];
+                var definition = StudioLocalizationSeed.Entries[i];
                 var localizedValue = selector(definition);
                 var entry = table.GetEntry(definition.key);
 
                 if (entry == null)
                 {
-                    entry = table.AddEntry(definition.key, localizedValue);
-                    changed = true;
-                }
-                else if (entry.Value != localizedValue)
-                {
-                    entry.Value = localizedValue;
+                    table.AddEntry(definition.key, localizedValue);
                     changed = true;
                 }
             }

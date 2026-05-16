@@ -7,7 +7,6 @@ namespace Odoro
     public enum StudioScreen
     {
         Capture,
-        SessionSettings,
         ClipsLibrary,
         Stage,
     }

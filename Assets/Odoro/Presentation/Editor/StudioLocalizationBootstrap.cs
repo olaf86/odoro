@@ -11,7 +11,7 @@ namespace Odoro.Editor
     [InitializeOnLoad]
     internal static class StudioLocalizationBootstrap
     {
-        private const string RootFolder = "Assets/Odoro/Localization";
+        private const string RootFolder = "Assets/Odoro/Presentation/Localization";
         private const string LocalesFolder = RootFolder + "/Locales";
         private const string StringTablesFolder = RootFolder + "/StringTables";
         private const string SettingsPath = RootFolder + "/Studio Localization Settings.asset";

@@ -88,15 +88,21 @@ namespace Odoro
         private readonly Label fixedDurationTitleLabel;
         private readonly Label fixedDurationLabel;
         private readonly Label captureFooterLabel;
+        private readonly ButtonBinding captureLibraryButton;
         private readonly ButtonBinding captureStageButton;
         private readonly ButtonBinding captureRecordButton;
         private readonly ButtonBinding captureStopButton;
+        private readonly ButtonBinding stageBackButton;
         private readonly Label stageTitleLabel;
         private readonly Label stageSummaryLabel;
         private readonly Label stageModeLabel;
         private readonly Label stageHintLabel;
+        private readonly ButtonBinding stageModelButton;
+        private readonly ButtonBinding stageRecordAgainButton;
         private readonly ButtonBinding stagePlaybackButton;
+        private readonly ButtonBinding stageSaveButton;
         private readonly ScrollView libraryScrollView;
+        private readonly ButtonBinding libraryBackButton;
         private readonly Label libraryTitleLabel;
         private readonly Label librarySubtitleLabel;
         private readonly Label libraryEmptyLabel;
@@ -190,9 +196,9 @@ namespace Odoro
 
             var captureFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
             var captureQuickActions = CreateRow();
-            var libraryButton = CreateSecondaryButton(StudioL10n.ButtonLibrary, () => actions.showLibrary?.Invoke());
-            libraryButton.button.style.marginRight = 10f;
-            captureQuickActions.Add(libraryButton.button);
+            captureLibraryButton = CreateSecondaryButton(StudioL10n.ButtonLibrary, () => actions.showLibrary?.Invoke());
+            captureLibraryButton.button.style.marginRight = 10f;
+            captureQuickActions.Add(captureLibraryButton.button);
             captureStageButton = CreateSecondaryButton(StudioL10n.ButtonStage, () => actions.showStage?.Invoke());
             captureQuickActions.Add(captureStageButton.button);
             captureFooter.Add(captureQuickActions);
@@ -220,7 +226,7 @@ namespace Odoro
             contentColumn.Add(stageScreen);
 
             var stageHeader = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            var stageBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            stageBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
             stageBackButton.button.style.width = 84f;
             stageBackButton.button.style.marginBottom = 12f;
             stageHeader.Add(stageBackButton.button);
@@ -240,11 +246,11 @@ namespace Odoro
 
             var stageFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
             var stageQuickActions = CreateRow();
-            var modelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
-            modelButton.button.style.marginRight = 10f;
-            stageQuickActions.Add(modelButton.button);
-            var recordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
-            stageQuickActions.Add(recordAgainButton.button);
+            stageModelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
+            stageModelButton.button.style.marginRight = 10f;
+            stageQuickActions.Add(stageModelButton.button);
+            stageRecordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
+            stageQuickActions.Add(stageRecordAgainButton.button);
             stageFooter.Add(stageQuickActions);
             stageFooter.Add(CreateSpacer(14f));
 
@@ -252,10 +258,10 @@ namespace Odoro
             stagePlaybackButton = CreateSecondaryButton(StudioL10n.ButtonPlay, () => actions.togglePlayback?.Invoke(), 46f);
             stagePlaybackButton.button.style.flexGrow = 1f;
             stagePlaybackButton.button.style.marginRight = 10f;
-            var saveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
-            saveButton.button.style.flexGrow = 1f;
+            stageSaveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
+            stageSaveButton.button.style.flexGrow = 1f;
             stageActionRow.Add(stagePlaybackButton.button);
-            stageActionRow.Add(saveButton.button);
+            stageActionRow.Add(stageSaveButton.button);
             stageFooter.Add(stageActionRow);
             stageFooter.Add(CreateSpacer(12f));
 
@@ -271,7 +277,7 @@ namespace Odoro
             libraryShell.style.flexGrow = 1f;
             var libraryHeaderRow = CreateRow();
             libraryHeaderRow.style.alignItems = Align.Center;
-            var libraryBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            libraryBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
             libraryBackButton.button.style.width = 84f;
             libraryBackButton.button.style.marginRight = 10f;
             libraryHeaderRow.Add(libraryBackButton.button);
@@ -323,6 +329,7 @@ namespace Odoro
 
         public void Render(OdoroStudioUiSnapshot snapshot)
         {
+            RefreshLocalizedChrome(snapshot);
             captureScreen.style.display = snapshot.screen == StudioScreen.Capture ? DisplayStyle.Flex : DisplayStyle.None;
             stageScreen.style.display = snapshot.screen == StudioScreen.Stage ? DisplayStyle.Flex : DisplayStyle.None;
             libraryScreen.style.display = snapshot.screen == StudioScreen.ClipsLibrary ? DisplayStyle.Flex : DisplayStyle.None;
@@ -331,12 +338,17 @@ namespace Odoro
             captureSummaryLabel.text = snapshot.captureSummary;
             captureModeLabel.text = snapshot.captureModeLabel;
             captureStatusLabel.text = snapshot.captureStatus;
-            sessionSummaryLabel.text = snapshot.captureSummary;
+            sessionSummaryLabel.text = StudioL10n.RecordingSessionSummary(
+                snapshot.recordingContext.bpm,
+                snapshot.recordingContext.timeSignatureNumerator,
+                snapshot.recordingContext.timeSignatureDenominator,
+                snapshot.recordingContext.countInBarCount
+            );
             bpmStepper.valueLabel.text = snapshot.recordingContext.bpm.ToString("0");
             numeratorStepper.valueLabel.text = snapshot.recordingContext.timeSignatureNumerator.ToString();
             denominatorStepper.valueLabel.text = snapshot.recordingContext.timeSignatureDenominator.ToString();
             countInStepper.valueLabel.text = snapshot.recordingContext.countInBarCount.ToString();
-            fixedDurationLabel.text = $"{snapshot.recordingContext.FixedCaptureDuration:0.00} sec";
+            fixedDurationLabel.text = StudioL10n.FixedDurationSeconds(snapshot.recordingContext.FixedCaptureDuration);
             captureFooterLabel.text = snapshot.selectedClip != null
                 ? StudioL10n.CaptureLatestClipReady
                 : StudioL10n.CapturePromptToRecord;
@@ -396,6 +408,31 @@ namespace Odoro
             {
                 UnityEngine.Object.Destroy(panelSettings);
             }
+        }
+
+        private void RefreshLocalizedChrome(OdoroStudioUiSnapshot snapshot)
+        {
+            captureHintLabel.text = StudioL10n.CaptureHint;
+            sessionTitleLabel.text = StudioL10n.RecordingSessionTitle;
+            bpmStepper.titleLabel.text = StudioL10n.SessionBpmTitle;
+            numeratorStepper.titleLabel.text = StudioL10n.SessionNumeratorTitle;
+            denominatorStepper.titleLabel.text = StudioL10n.SessionDenominatorTitle;
+            countInStepper.titleLabel.text = StudioL10n.SessionCountInTitle;
+            fixedDurationTitleLabel.text = StudioL10n.FixedCaptureDurationTitle;
+            captureLibraryButton.label.text = StudioL10n.ButtonLibrary;
+            captureStageButton.label.text = StudioL10n.ButtonStage;
+            captureRecordButton.label.text = StudioL10n.ButtonRecord;
+            captureStopButton.label.text = StudioL10n.ButtonStop;
+            stageBackButton.label.text = StudioL10n.ButtonBack;
+            stageModelButton.label.text = StudioL10n.ButtonModel;
+            stageRecordAgainButton.label.text = StudioL10n.ButtonRecordAgain;
+            stagePlaybackButton.label.text = snapshot.state.isPlaying ? StudioL10n.ButtonPause : StudioL10n.ButtonPlay;
+            stageSaveButton.label.text = StudioL10n.ButtonSave;
+            libraryBackButton.label.text = StudioL10n.ButtonBack;
+            libraryTitleLabel.text = StudioL10n.LibraryTitle;
+            librarySubtitleLabel.text = StudioL10n.LibrarySubtitle;
+            libraryEmptyLabel.text = StudioL10n.LibraryEmpty;
+            archiveRootLabel.text = StudioL10n.ArchiveRootCaption;
         }
 
         private void RenderLibrary(IReadOnlyList<MotionTakeSummary> takes)

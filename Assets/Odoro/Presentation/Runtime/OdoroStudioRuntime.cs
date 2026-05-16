@@ -58,11 +58,13 @@ namespace Odoro
             ConfigureUi();
             RefreshLibrary();
             motionSource.Activate(MotionSourceActivity.Preview);
+            StudioL10n.LocaleChanged += RefreshUi;
             RefreshUi();
         }
 
         private void OnDestroy()
         {
+            StudioL10n.LocaleChanged -= RefreshUi;
             motionSource?.Deactivate();
             skeletonView?.Dispose();
             avatarView?.Dispose();

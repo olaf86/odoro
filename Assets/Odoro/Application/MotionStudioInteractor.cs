@@ -45,7 +45,7 @@ namespace Odoro
             State.isRecording = true;
             State.recordedFrameCount = 0;
             State.recordingDuration = 0f;
-            State.statusText = "モーションを記録しています。";
+            State.statusText = StudioL10n.StatusRecordingMotion;
             PublishState();
         }
 
@@ -60,7 +60,7 @@ namespace Odoro
 
             if (capturedFrames.Count < 2)
             {
-                State.statusText = "記録フレームが足りませんでした。";
+                State.statusText = StudioL10n.StatusInsufficientFrames;
                 PublishState();
                 return;
             }
@@ -73,7 +73,7 @@ namespace Odoro
             var playbackClip = capturedClipPreparer.PrepareCapturedClip(sourceClip);
             ReplaceCurrentClip(playbackClip, sourceClip);
 
-            State.statusText = "キャプチャが完了しました。";
+            State.statusText = StudioL10n.StatusCaptureComplete;
             PublishState();
             OnRecordingCompleted?.Invoke(playbackClip);
         }

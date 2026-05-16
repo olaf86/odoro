@@ -23,7 +23,7 @@ namespace Odoro
             currentActivity = activity;
             startTime = Time.unscaledTime;
             lastEmitTime = -1f;
-            OnStatusTextChanged?.Invoke(activity == MotionSourceActivity.Recording ? "録画ソースを有効化しました。" : "mock プレビューを表示しています。");
+            OnStatusTextChanged?.Invoke(activity == MotionSourceActivity.Recording ? StudioL10n.StatusMockRecording : StudioL10n.StatusMockPreview);
         }
 
         public void Deactivate()

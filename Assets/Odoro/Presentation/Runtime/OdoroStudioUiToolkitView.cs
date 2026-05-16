@@ -51,11 +51,20 @@ namespace Odoro
     {
         private sealed class StepperBinding
         {
+            public Label titleLabel;
             public Label valueLabel;
+        }
+
+        private sealed class ButtonBinding
+        {
+            public Button button;
+            public Label label;
         }
 
         private const float ReferencePhoneWidth = 390f;
         private const float ReferencePhoneHeight = 844f;
+
+        private static Font uiFont;
 
         private readonly UIDocument document;
         private readonly PanelSettings panelSettings;
@@ -69,24 +78,29 @@ namespace Odoro
         private readonly Label captureSummaryLabel;
         private readonly Label captureModeLabel;
         private readonly Label captureStatusLabel;
+        private readonly Label captureHintLabel;
+        private readonly Label sessionTitleLabel;
         private readonly Label sessionSummaryLabel;
-        private readonly Label captureFooterLabel;
-        private readonly Button captureStageButton;
-        private readonly Button captureRecordButton;
-        private readonly Button captureStopButton;
-        private readonly Foldout sessionFoldout;
         private readonly StepperBinding bpmStepper;
         private readonly StepperBinding numeratorStepper;
         private readonly StepperBinding denominatorStepper;
         private readonly StepperBinding countInStepper;
+        private readonly Label fixedDurationTitleLabel;
         private readonly Label fixedDurationLabel;
+        private readonly Label captureFooterLabel;
+        private readonly ButtonBinding captureStageButton;
+        private readonly ButtonBinding captureRecordButton;
+        private readonly ButtonBinding captureStopButton;
         private readonly Label stageTitleLabel;
         private readonly Label stageSummaryLabel;
         private readonly Label stageModeLabel;
         private readonly Label stageHintLabel;
-        private readonly Button stagePlaybackButton;
+        private readonly ButtonBinding stagePlaybackButton;
         private readonly ScrollView libraryScrollView;
+        private readonly Label libraryTitleLabel;
+        private readonly Label librarySubtitleLabel;
         private readonly Label libraryEmptyLabel;
+        private readonly Label archiveRootLabel;
         private readonly Label toastLabel;
         private readonly OdoroStudioUiActions actions;
 
@@ -112,20 +126,14 @@ namespace Odoro
             root.style.alignItems = Align.Center;
             root.style.justifyContent = Justify.FlexStart;
 
-            safeAreaRoot = new VisualElement
-            {
-                name = "odoro-safe-area",
-            };
+            safeAreaRoot = new VisualElement { name = "odoro-safe-area" };
             safeAreaRoot.style.flexGrow = 1f;
             safeAreaRoot.style.width = new Length(100f, LengthUnit.Percent);
             safeAreaRoot.style.position = Position.Relative;
             safeAreaRoot.style.alignItems = Align.Center;
             root.Add(safeAreaRoot);
 
-            contentColumn = new VisualElement
-            {
-                name = "odoro-content-column",
-            };
+            contentColumn = new VisualElement { name = "odoro-content-column" };
             contentColumn.style.flexGrow = 1f;
             contentColumn.style.width = new Length(100f, LengthUnit.Percent);
             contentColumn.style.maxWidth = 460f;
@@ -138,83 +146,68 @@ namespace Odoro
             captureScreen = CreateScreen("capture-screen");
             contentColumn.Add(captureScreen);
 
-            var captureHeader = CreatePanel(new Color(0.14f, 0.17f, 0.22f, 0.82f), 22f);
+            var captureHeader = CreatePanel(new Color(0.14f, 0.17f, 0.22f, 0.84f), 22f);
             captureHeadlineLabel = CreateTitleLabel();
             captureSummaryLabel = CreateSubtitleLabel();
             captureModeLabel = CreatePillLabel();
             captureStatusLabel = CreateBodyLabel();
+            captureHintLabel = CreateCaptionLabel(StudioL10n.CaptureHint);
 
             captureHeader.Add(captureHeadlineLabel);
             captureHeader.Add(captureSummaryLabel);
             captureHeader.Add(CreateSpacer(10f));
-
-            var captureHeaderRow = CreateRow();
-            captureHeaderRow.style.justifyContent = Justify.SpaceBetween;
-            captureHeaderRow.Add(captureModeLabel);
-            captureHeader.Add(captureHeaderRow);
+            captureHeader.Add(captureModeLabel);
             captureHeader.Add(CreateSpacer(10f));
             captureHeader.Add(captureStatusLabel);
+            captureHeader.Add(CreateSpacer(8f));
+            captureHeader.Add(captureHintLabel);
             captureScreen.Add(captureHeader);
 
-            sessionFoldout = new Foldout
-            {
-                text = "Session Settings",
-                value = false,
-            };
-            sessionFoldout.style.marginTop = 12f;
-            sessionFoldout.style.marginBottom = 8f;
-            sessionFoldout.style.paddingLeft = 16f;
-            sessionFoldout.style.paddingRight = 16f;
-            sessionFoldout.style.paddingTop = 12f;
-            sessionFoldout.style.paddingBottom = 14f;
-            sessionFoldout.style.borderTopLeftRadius = 22f;
-            sessionFoldout.style.borderTopRightRadius = 22f;
-            sessionFoldout.style.borderBottomLeftRadius = 22f;
-            sessionFoldout.style.borderBottomRightRadius = 22f;
-            sessionFoldout.style.backgroundColor = new Color(0.08f, 0.10f, 0.14f, 0.90f);
-            sessionFoldout.style.color = Color.white;
+            var sessionPanel = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.92f), 22f);
+            sessionPanel.style.marginTop = 12f;
+            sessionTitleLabel = CreateSectionLabel(StudioL10n.RecordingSessionTitle);
+            sessionSummaryLabel = CreateSubtitleLabel(StudioL10n.RecordingSessionHint);
+            sessionPanel.Add(sessionTitleLabel);
+            sessionPanel.Add(sessionSummaryLabel);
 
-            sessionSummaryLabel = CreateSubtitleLabel();
-            sessionSummaryLabel.style.marginBottom = 8f;
-            sessionFoldout.Add(sessionSummaryLabel);
-
-            bpmStepper = AddStepper(sessionFoldout, "BPM", actions.decreaseBpm, actions.increaseBpm);
-            numeratorStepper = AddStepper(sessionFoldout, "Numerator", actions.decreaseNumerator, actions.increaseNumerator);
-            denominatorStepper = AddStepper(sessionFoldout, "Denominator", actions.decreaseDenominator, actions.increaseDenominator);
-            countInStepper = AddStepper(sessionFoldout, "Count In Bars", actions.decreaseCountInBars, actions.increaseCountInBars);
+            bpmStepper = AddStepper(sessionPanel, StudioL10n.SessionBpmTitle, actions.decreaseBpm, actions.increaseBpm);
+            numeratorStepper = AddStepper(sessionPanel, StudioL10n.SessionNumeratorTitle, actions.decreaseNumerator, actions.increaseNumerator);
+            denominatorStepper = AddStepper(sessionPanel, StudioL10n.SessionDenominatorTitle, actions.decreaseDenominator, actions.increaseDenominator);
+            countInStepper = AddStepper(sessionPanel, StudioL10n.SessionCountInTitle, actions.decreaseCountInBars, actions.increaseCountInBars);
 
             var durationCard = CreateCard();
             durationCard.style.marginTop = 10f;
-            durationCard.Add(CreateCaptionLabel("Fixed Capture Duration"));
+            fixedDurationTitleLabel = CreateCaptionLabel(StudioL10n.FixedCaptureDurationTitle);
             fixedDurationLabel = CreateValueLabel();
+            durationCard.Add(fixedDurationTitleLabel);
             durationCard.Add(fixedDurationLabel);
-            sessionFoldout.Add(durationCard);
-            captureScreen.Add(sessionFoldout);
+            sessionPanel.Add(durationCard);
+            captureScreen.Add(sessionPanel);
 
             var captureSpacer = new VisualElement();
             captureSpacer.style.flexGrow = 1f;
             captureScreen.Add(captureSpacer);
 
-            var captureFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.68f), 22f);
+            var captureFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
             var captureQuickActions = CreateRow();
-            var libraryButton = CreateSecondaryButton("Library", () => actions.showLibrary?.Invoke());
-            libraryButton.style.marginRight = 10f;
-            captureQuickActions.Add(libraryButton);
-            captureStageButton = CreateSecondaryButton("Stage", () => actions.showStage?.Invoke());
-            captureQuickActions.Add(captureStageButton);
+            var libraryButton = CreateSecondaryButton(StudioL10n.ButtonLibrary, () => actions.showLibrary?.Invoke());
+            libraryButton.button.style.marginRight = 10f;
+            captureQuickActions.Add(libraryButton.button);
+            captureStageButton = CreateSecondaryButton(StudioL10n.ButtonStage, () => actions.showStage?.Invoke());
+            captureQuickActions.Add(captureStageButton.button);
             captureFooter.Add(captureQuickActions);
             captureFooter.Add(CreateSpacer(14f));
 
             var recordRow = CreateRow();
             recordRow.style.justifyContent = Justify.Center;
             recordRow.style.alignItems = Align.Center;
-            captureRecordButton = CreatePrimaryButton("Record", () => actions.startRecording?.Invoke(), 54f);
-            captureRecordButton.style.minWidth = 132f;
-            captureRecordButton.style.marginRight = 18f;
-            captureStopButton = CreateDangerButton("Stop", () => actions.stopRecording?.Invoke(), 54f);
-            captureStopButton.style.minWidth = 132f;
-            recordRow.Add(captureRecordButton);
-            recordRow.Add(captureStopButton);
+            captureRecordButton = CreatePrimaryButton(StudioL10n.ButtonRecord, () => actions.startRecording?.Invoke(), 54f);
+            captureRecordButton.button.style.minWidth = 132f;
+            captureRecordButton.button.style.marginRight = 18f;
+            captureStopButton = CreateDangerButton(StudioL10n.ButtonStop, () => actions.stopRecording?.Invoke(), 54f);
+            captureStopButton.button.style.minWidth = 132f;
+            recordRow.Add(captureRecordButton.button);
+            recordRow.Add(captureStopButton.button);
             captureFooter.Add(recordRow);
             captureFooter.Add(CreateSpacer(12f));
 
@@ -226,49 +219,43 @@ namespace Odoro
             stageScreen = CreateScreen("stage-screen");
             contentColumn.Add(stageScreen);
 
-            var stageHeader = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.70f), 22f);
-            var stageBackButton = CreateSecondaryButton("Back", () => actions.showCapture?.Invoke());
-            stageBackButton.style.width = 72f;
-            stageHeader.Add(stageBackButton);
-            stageHeader.Add(CreateSpacer(12f));
-
-            var stageHeaderRow = CreateRow();
-            stageHeaderRow.style.alignItems = Align.FlexStart;
-            stageHeaderRow.style.justifyContent = Justify.SpaceBetween;
-            var stageLeft = new VisualElement();
-            stageLeft.style.flexGrow = 1f;
+            var stageHeader = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
+            var stageBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            stageBackButton.button.style.width = 84f;
+            stageBackButton.button.style.marginBottom = 12f;
+            stageHeader.Add(stageBackButton.button);
 
             stageTitleLabel = CreateTitleLabel();
             stageSummaryLabel = CreateSubtitleLabel();
             stageModeLabel = CreatePillLabel();
-            stageLeft.Add(stageTitleLabel);
-            stageLeft.Add(stageSummaryLabel);
-            stageHeaderRow.Add(stageLeft);
-            stageHeaderRow.Add(stageModeLabel);
-            stageHeader.Add(stageHeaderRow);
+            stageHeader.Add(stageTitleLabel);
+            stageHeader.Add(stageSummaryLabel);
+            stageHeader.Add(CreateSpacer(10f));
+            stageHeader.Add(stageModeLabel);
             stageScreen.Add(stageHeader);
 
             var stageSpacer = new VisualElement();
             stageSpacer.style.flexGrow = 1f;
             stageScreen.Add(stageSpacer);
 
-            var stageFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.70f), 22f);
+            var stageFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
             var stageQuickActions = CreateRow();
-            var modelButton = CreateSecondaryButton("Model", () => actions.showModelInfo?.Invoke());
-            modelButton.style.marginRight = 10f;
-            stageQuickActions.Add(modelButton);
-            stageQuickActions.Add(CreateSecondaryButton("Record Again", () => actions.showCapture?.Invoke()));
+            var modelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
+            modelButton.button.style.marginRight = 10f;
+            stageQuickActions.Add(modelButton.button);
+            var recordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
+            stageQuickActions.Add(recordAgainButton.button);
             stageFooter.Add(stageQuickActions);
             stageFooter.Add(CreateSpacer(14f));
 
             var stageActionRow = CreateRow();
-            stagePlaybackButton = CreateSecondaryButton("Play", () => actions.togglePlayback?.Invoke(), 46f);
-            stagePlaybackButton.style.flexGrow = 1f;
-            stagePlaybackButton.style.marginRight = 10f;
-            var saveButton = CreatePrimaryButton("Saved", () => actions.saveTake?.Invoke(), 46f);
-            saveButton.style.flexGrow = 1f;
-            stageActionRow.Add(stagePlaybackButton);
-            stageActionRow.Add(saveButton);
+            stagePlaybackButton = CreateSecondaryButton(StudioL10n.ButtonPlay, () => actions.togglePlayback?.Invoke(), 46f);
+            stagePlaybackButton.button.style.flexGrow = 1f;
+            stagePlaybackButton.button.style.marginRight = 10f;
+            var saveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
+            saveButton.button.style.flexGrow = 1f;
+            stageActionRow.Add(stagePlaybackButton.button);
+            stageActionRow.Add(saveButton.button);
             stageFooter.Add(stageActionRow);
             stageFooter.Add(CreateSpacer(12f));
 
@@ -280,26 +267,26 @@ namespace Odoro
             libraryScreen = CreateScreen("library-screen");
             contentColumn.Add(libraryScreen);
 
-            var libraryShell = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.92f), 22f);
+            var libraryShell = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.94f), 22f);
             libraryShell.style.flexGrow = 1f;
-            libraryShell.style.marginBottom = 8f;
             var libraryHeaderRow = CreateRow();
             libraryHeaderRow.style.alignItems = Align.Center;
-            var libraryBackButton = CreateSecondaryButton("Back", () => actions.showCapture?.Invoke());
-            libraryBackButton.style.width = 72f;
-            libraryBackButton.style.marginRight = 10f;
-            libraryHeaderRow.Add(libraryBackButton);
+            var libraryBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            libraryBackButton.button.style.width = 84f;
+            libraryBackButton.button.style.marginRight = 10f;
+            libraryHeaderRow.Add(libraryBackButton.button);
 
             var libraryTitleColumn = new VisualElement();
             libraryTitleColumn.style.flexGrow = 1f;
-            libraryTitleColumn.Add(CreateSectionLabel("Clip Library"));
-            libraryTitleColumn.Add(CreateSubtitleLabel("Review past takes and jump back into playback."));
+            libraryTitleLabel = CreateSectionLabel(StudioL10n.LibraryTitle);
+            librarySubtitleLabel = CreateSubtitleLabel(StudioL10n.LibrarySubtitle);
+            libraryTitleColumn.Add(libraryTitleLabel);
+            libraryTitleColumn.Add(librarySubtitleLabel);
             libraryHeaderRow.Add(libraryTitleColumn);
             libraryShell.Add(libraryHeaderRow);
             libraryShell.Add(CreateSpacer(14f));
 
-            libraryEmptyLabel = CreateValueLabel();
-            libraryEmptyLabel.text = "No clips yet";
+            libraryEmptyLabel = CreateValueLabel(StudioL10n.LibraryEmpty);
             libraryEmptyLabel.style.display = DisplayStyle.None;
             libraryShell.Add(libraryEmptyLabel);
 
@@ -308,13 +295,13 @@ namespace Odoro
             libraryScrollView.style.marginTop = 4f;
             libraryShell.Add(libraryScrollView);
             libraryShell.Add(CreateSpacer(12f));
-            libraryShell.Add(CreateCaptionLabel("Archive root: Application.persistentDataPath/OdoroArchiveV2"));
+
+            archiveRootLabel = CreateCaptionLabel(StudioL10n.ArchiveRootCaption);
+            libraryShell.Add(archiveRootLabel);
             libraryScreen.Add(libraryShell);
 
-            toastLabel = new Label
-            {
-                name = "odoro-toast",
-            };
+            toastLabel = CreateBodyLabel();
+            toastLabel.name = "odoro-toast";
             toastLabel.style.position = Position.Absolute;
             toastLabel.style.left = 24f;
             toastLabel.style.right = 24f;
@@ -324,12 +311,12 @@ namespace Odoro
             toastLabel.style.paddingTop = 10f;
             toastLabel.style.paddingBottom = 10f;
             toastLabel.style.backgroundColor = Palette.Toast;
-            toastLabel.style.color = Color.white;
             toastLabel.style.borderTopLeftRadius = 18f;
             toastLabel.style.borderTopRightRadius = 18f;
             toastLabel.style.borderBottomLeftRadius = 18f;
             toastLabel.style.borderBottomRightRadius = 18f;
             toastLabel.style.display = DisplayStyle.None;
+            toastLabel.style.color = Color.white;
             toastLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
             safeAreaRoot.Add(toastLabel);
         }
@@ -351,19 +338,19 @@ namespace Odoro
             countInStepper.valueLabel.text = snapshot.recordingContext.countInBarCount.ToString();
             fixedDurationLabel.text = $"{snapshot.recordingContext.FixedCaptureDuration:0.00} sec";
             captureFooterLabel.text = snapshot.selectedClip != null
-                ? "Latest clip is ready. Open Stage to preview the take."
-                : "Tap Record to capture the first take.";
+                ? StudioL10n.CaptureLatestClipReady
+                : StudioL10n.CapturePromptToRecord;
 
-            captureStageButton.SetEnabled(snapshot.selectedClip != null && !snapshot.state.isRecording);
-            captureRecordButton.SetEnabled(!snapshot.state.isRecording);
-            captureStopButton.SetEnabled(snapshot.state.isRecording);
+            captureStageButton.button.SetEnabled(snapshot.selectedClip != null && !snapshot.state.isRecording);
+            captureRecordButton.button.SetEnabled(!snapshot.state.isRecording);
+            captureStopButton.button.SetEnabled(snapshot.state.isRecording);
 
             stageTitleLabel.text = snapshot.stageTitle;
             stageSummaryLabel.text = snapshot.stageSummary;
             stageModeLabel.text = snapshot.stageModeLabel;
             stageHintLabel.text = snapshot.stageHint;
-            stagePlaybackButton.text = snapshot.state.isPlaying ? "Pause" : "Play";
-            stagePlaybackButton.SetEnabled(snapshot.selectedClip != null);
+            stagePlaybackButton.label.text = snapshot.state.isPlaying ? StudioL10n.ButtonPause : StudioL10n.ButtonPlay;
+            stagePlaybackButton.button.SetEnabled(snapshot.selectedClip != null);
 
             RenderLibrary(snapshot.libraryClips ?? Array.Empty<MotionTakeSummary>());
 
@@ -424,18 +411,19 @@ namespace Odoro
                 card.Add(CreateValueLabel(take.DisplayName));
                 card.Add(CreateCaptionLabel(take.SecondarySummary));
 
-                var openButton = CreatePrimaryButton("Open Playback", () => actions.openTake?.Invoke(take), 40f);
-                openButton.style.marginTop = 10f;
-                card.Add(openButton);
+                var openButton = CreatePrimaryButton(StudioL10n.OpenPlayback, () => actions.openTake?.Invoke(take), 40f);
+                openButton.button.style.marginTop = 10f;
+                card.Add(openButton.button);
                 libraryScrollView.Add(card);
             }
         }
 
-        private StepperBinding AddStepper(VisualElement parent, string label, Action decrease, Action increase)
+        private StepperBinding AddStepper(VisualElement parent, string title, Action decrease, Action increase)
         {
             var card = CreateCard();
             card.style.marginTop = 10f;
-            card.Add(CreateCaptionLabel(label));
+            var titleLabel = CreateCaptionLabel(title);
+            card.Add(titleLabel);
 
             var row = CreateRow();
             row.style.alignItems = Align.Center;
@@ -443,8 +431,9 @@ namespace Odoro
             row.style.marginTop = 8f;
 
             var decreaseButton = CreateSecondaryButton("-", decrease, 34f);
-            decreaseButton.style.width = 44f;
-            row.Add(decreaseButton);
+            decreaseButton.button.style.width = 44f;
+            decreaseButton.button.style.marginRight = 8f;
+            row.Add(decreaseButton.button);
 
             var valueLabel = CreateValueLabel("--");
             valueLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
@@ -452,23 +441,22 @@ namespace Odoro
             row.Add(valueLabel);
 
             var increaseButton = CreateSecondaryButton("+", increase, 34f);
-            increaseButton.style.width = 44f;
-            row.Add(increaseButton);
+            increaseButton.button.style.width = 44f;
+            increaseButton.button.style.marginLeft = 8f;
+            row.Add(increaseButton.button);
             card.Add(row);
             parent.Add(card);
 
             return new StepperBinding
             {
+                titleLabel = titleLabel,
                 valueLabel = valueLabel,
             };
         }
 
         private static VisualElement CreateScreen(string name)
         {
-            var screen = new VisualElement
-            {
-                name = name,
-            };
+            var screen = new VisualElement { name = name };
             screen.style.flexGrow = 1f;
             screen.style.flexDirection = FlexDirection.Column;
             return screen;
@@ -521,63 +509,49 @@ namespace Odoro
         private static Label CreateTitleLabel(string text = "")
         {
             var label = new Label(text);
-            label.style.color = Color.white;
-            label.style.fontSize = 21f;
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            ApplyTextStyle(label, 21f, FontStyle.Bold, Color.white);
             return label;
         }
 
         private static Label CreateSectionLabel(string text)
         {
-            var label = CreateTitleLabel(text);
-            label.style.fontSize = 18f;
+            var label = new Label(text);
+            ApplyTextStyle(label, 18f, FontStyle.Bold, Color.white);
             return label;
         }
 
         private static Label CreateSubtitleLabel(string text = "")
         {
             var label = new Label(text);
-            label.style.color = new Color(0.74f, 0.80f, 0.86f);
-            label.style.fontSize = 12f;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            ApplyTextStyle(label, 12f, FontStyle.Normal, new Color(0.74f, 0.80f, 0.86f));
             return label;
         }
 
         private static Label CreateBodyLabel(string text = "")
         {
             var label = new Label(text);
-            label.style.color = new Color(0.86f, 0.89f, 0.92f);
-            label.style.fontSize = 13f;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            ApplyTextStyle(label, 13f, FontStyle.Normal, new Color(0.86f, 0.89f, 0.92f));
             return label;
         }
 
         private static Label CreateCaptionLabel(string text)
         {
             var label = new Label(text);
-            label.style.color = new Color(0.72f, 0.78f, 0.84f);
-            label.style.fontSize = 11f;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            ApplyTextStyle(label, 11f, FontStyle.Normal, new Color(0.72f, 0.78f, 0.84f));
             return label;
         }
 
         private static Label CreateValueLabel(string text = "")
         {
             var label = new Label(text);
-            label.style.color = Color.white;
-            label.style.fontSize = 15f;
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            ApplyTextStyle(label, 15f, FontStyle.Bold, Color.white);
             return label;
         }
 
         private static Label CreatePillLabel()
         {
             var label = new Label();
-            label.style.color = Color.white;
-            label.style.fontSize = 11f;
-            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            ApplyTextStyle(label, 11f, FontStyle.Bold, Color.white);
             label.style.backgroundColor = new Color(0f, 0f, 0f, 0.30f);
             label.style.paddingLeft = 12f;
             label.style.paddingRight = 12f;
@@ -587,54 +561,62 @@ namespace Odoro
             label.style.borderTopRightRadius = 999f;
             label.style.borderBottomLeftRadius = 999f;
             label.style.borderBottomRightRadius = 999f;
+            label.style.alignSelf = Align.FlexStart;
             return label;
         }
 
-        private static Button CreatePrimaryButton(string text, Action action, float height = 40f)
+        private static ButtonBinding CreatePrimaryButton(string text, Action action, float height = 40f)
         {
-            var button = new Button(() => action?.Invoke())
-            {
-                text = text,
-            };
-            StyleButton(button, new Color(0.18f, 0.52f, 0.87f), Color.white, height);
-            return button;
+            return CreateButton(text, action, height, new Color(0.18f, 0.52f, 0.87f), Color.white);
         }
 
-        private static Button CreateSecondaryButton(string text, Action action, float height = 40f)
+        private static ButtonBinding CreateSecondaryButton(string text, Action action, float height = 40f)
         {
-            var button = new Button(() => action?.Invoke())
-            {
-                text = text,
-            };
-            StyleButton(button, new Color(0.16f, 0.19f, 0.24f), Color.white, height);
-            return button;
+            return CreateButton(text, action, height, new Color(0.16f, 0.19f, 0.24f), Color.white);
         }
 
-        private static Button CreateDangerButton(string text, Action action, float height = 40f)
+        private static ButtonBinding CreateDangerButton(string text, Action action, float height = 40f)
         {
-            var button = new Button(() => action?.Invoke())
-            {
-                text = text,
-            };
-            StyleButton(button, new Color(0.86f, 0.19f, 0.22f), Color.white, height);
-            return button;
+            return CreateButton(text, action, height, new Color(0.86f, 0.19f, 0.22f), Color.white);
         }
 
-        private static void StyleButton(Button button, Color backgroundColor, Color textColor, float height)
+        private static ButtonBinding CreateButton(string text, Action action, float height, Color background, Color foreground)
         {
+            var button = new Button(() => action?.Invoke());
+            button.focusable = false;
             button.style.height = height;
             button.style.borderTopLeftRadius = 18f;
             button.style.borderTopRightRadius = 18f;
             button.style.borderBottomLeftRadius = 18f;
             button.style.borderBottomRightRadius = 18f;
-            button.style.backgroundColor = backgroundColor;
-            button.style.color = textColor;
-            button.style.unityFontStyleAndWeight = FontStyle.Bold;
-            button.style.fontSize = 14f;
+            button.style.backgroundColor = background;
             button.style.paddingLeft = 16f;
             button.style.paddingRight = 16f;
-            button.style.whiteSpace = WhiteSpace.Normal;
-            button.style.flexGrow = 1f;
+            button.style.paddingTop = 10f;
+            button.style.paddingBottom = 10f;
+            button.style.justifyContent = Justify.Center;
+            button.style.alignItems = Align.Center;
+
+            var label = new Label(text);
+            ApplyTextStyle(label, 14f, FontStyle.Bold, foreground);
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
+            label.pickingMode = PickingMode.Ignore;
+            button.Add(label);
+
+            return new ButtonBinding
+            {
+                button = button,
+                label = label,
+            };
+        }
+
+        private static void ApplyTextStyle(TextElement element, float fontSize, FontStyle fontStyle, Color color)
+        {
+            element.style.unityFont = uiFont ??= Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            element.style.fontSize = fontSize;
+            element.style.unityFontStyleAndWeight = fontStyle;
+            element.style.color = color;
+            element.style.whiteSpace = WhiteSpace.Normal;
         }
     }
 }

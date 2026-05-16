@@ -28,11 +28,6 @@ namespace Odoro
         public event Action<MotionFrame> OnFrame;
         public event Action<string> OnStatusTextChanged;
 
-        private const string WaitingForBodyStatus = "AR body tracking の初期化中です。";
-        private const string BodyDetectedStatus = "身体を検出しました。録画できます。";
-        private const string BodyLostStatus = "身体を検出中です。全身がカメラに入るようにしてください。";
-        private const string UnsupportedStatus = "この環境では AR body tracking を利用できません。";
-
         private GameObject arSessionObject;
         private GameObject xrOriginObject;
         private GameObject arCameraObject;
@@ -74,7 +69,7 @@ namespace Odoro
 
             if (!IsSupported)
             {
-                OnStatusTextChanged?.Invoke(UnsupportedStatus);
+                OnStatusTextChanged?.Invoke(StudioL10n.StatusArUnsupported);
                 return;
             }
 
@@ -87,7 +82,7 @@ namespace Odoro
             arCameraManager.enabled = true;
             arCameraBackground.enabled = true;
             arPoseDriver.enabled = true;
-            OnStatusTextChanged?.Invoke(WaitingForBodyStatus);
+            OnStatusTextChanged?.Invoke(StudioL10n.StatusArPreparing);
         }
 
         public void Deactivate()
@@ -177,7 +172,7 @@ namespace Odoro
                 if (bodyDetected)
                 {
                     bodyDetected = false;
-                    OnStatusTextChanged?.Invoke(BodyLostStatus);
+                    OnStatusTextChanged?.Invoke(StudioL10n.StatusArLost);
                 }
 
                 return;
@@ -186,7 +181,7 @@ namespace Odoro
             if (!bodyDetected)
             {
                 bodyDetected = true;
-                OnStatusTextChanged?.Invoke(BodyDetectedStatus);
+                OnStatusTextChanged?.Invoke(StudioL10n.StatusArDetected);
             }
 
             var frame = MakeFrame(body);

@@ -136,7 +136,7 @@ namespace Odoro
         {
             return new MotionStudioState
             {
-                statusText = "プレビュー待機中です。",
+                statusText = StudioL10n.StatusPreviewIdle,
                 isRecording = false,
                 isPlaying = false,
                 recordedFrameCount = 0,

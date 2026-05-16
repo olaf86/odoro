@@ -217,13 +217,13 @@ namespace Odoro
                 interactor.SetPlaybackActive(false);
                 RefreshLibrary();
                 screen = StudioScreen.Stage;
-                ShowTransientMessage("新しいテイクを保存しました。");
+                ShowTransientMessage(StudioL10n.ToastTakeSaved);
                 RefreshUi();
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
-                ShowTransientMessage("保存に失敗しました。Console を確認してください。");
+                ShowTransientMessage(StudioL10n.ToastSaveFailed);
             }
         }
 
@@ -254,12 +254,12 @@ namespace Odoro
                 captureSummary = RecordingContextSummary(),
                 captureStatus = interactor.State.statusText,
                 captureModeLabel = CaptureModeLabel(),
-                stageTitle = selectedTake != null ? selectedTake.DisplayName : "Stage Playback",
-                stageSummary = selectedClip != null ? $"{selectedClip.Duration:0.00}s • {selectedClip.FrameCount} frames" : "No clip loaded",
-                stageModeLabel = avatarView != null && avatarView.IsAvailable ? "Avatar" : "Skeleton",
+                stageTitle = selectedTake != null ? selectedTake.DisplayName : StudioL10n.StageTitleFallback,
+                stageSummary = selectedClip != null ? StudioL10n.ClipSummary(selectedClip.Duration, selectedClip.FrameCount) : StudioL10n.StageNoClip,
+                stageModeLabel = avatarView != null && avatarView.IsAvailable ? StudioL10n.AvatarLabel : StudioL10n.SkeletonLabel,
                 stageHint = avatarView != null && avatarView.IsAvailable
-                    ? "Humanoid avatar preview is active."
-                    : "Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable avatar preview.",
+                    ? StudioL10n.StageHintAvatarActive
+                    : StudioL10n.StageHintAvatarMissing,
             });
         }
 
@@ -281,7 +281,7 @@ namespace Odoro
         {
             if (selectedClip == null)
             {
-                ShowTransientMessage("まずはテイクを録画してください。");
+                ShowTransientMessage(StudioL10n.ToastNeedCaptureFirst);
                 return;
             }
 
@@ -293,19 +293,24 @@ namespace Odoro
         {
             ShowTransientMessage(
                 avatarView != null && avatarView.IsAvailable
-                    ? "Default humanoid avatar is active."
-                    : "Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable avatar preview."
+                    ? StudioL10n.ToastAvatarActive
+                    : StudioL10n.ToastAvatarMissing
             );
         }
 
         private void SaveTakeReminder()
         {
-            ShowTransientMessage("Already saved after capture.");
+            ShowTransientMessage(StudioL10n.ToastAlreadySaved);
         }
 
         private string RecordingContextSummary()
         {
-            return $"{recordingContext.bpm:0} BPM  •  {recordingContext.timeSignatureNumerator}/{recordingContext.timeSignatureDenominator}  •  {recordingContext.targetBarCount} bars";
+            return StudioL10n.RecordingSessionSummary(
+                Mathf.RoundToInt(recordingContext.bpm),
+                recordingContext.timeSignatureNumerator,
+                recordingContext.timeSignatureDenominator,
+                recordingContext.targetBarCount
+            );
         }
 
         private void StartRecording()
@@ -313,7 +318,7 @@ namespace Odoro
             motionSource.Activate(MotionSourceActivity.Recording);
             interactor.UpdateMaximumCaptureDuration(recordingContext.FixedCaptureDuration);
             interactor.BeginRecording();
-            ShowTransientMessage("録画を開始しました。");
+            ShowTransientMessage(StudioL10n.ToastRecordingStarted);
             RefreshUi();
         }
 
@@ -334,7 +339,7 @@ namespace Odoro
             interactor.ReplaceCurrentClip(storedTake.clip, storedTake.sourceClip);
             interactor.SetPlaybackActive(false);
             screen = StudioScreen.Stage;
-            ShowTransientMessage("保存済みテイクを読み込みました。");
+            ShowTransientMessage(StudioL10n.ToastStoredTakeLoaded);
             RefreshUi();
         }
 
@@ -398,21 +403,15 @@ namespace Odoro
         {
             if (interactor.State.isRecording)
             {
-                return $"Recording {interactor.State.recordingDuration:0.00}s / {recordingContext.FixedCaptureDuration:0.00}s";
+                return StudioL10n.RecordingProgress(interactor.State.recordingDuration, recordingContext.FixedCaptureDuration);
             }
 
-            return $"{recordingContext.targetBarCount} bars • {recordingContext.bpm:0} BPM";
+            return StudioL10n.CaptureBeatSummary(recordingContext.targetBarCount, Mathf.RoundToInt(recordingContext.bpm));
         }
 
         private string CaptureModeLabel()
         {
-            return motionSource.CaptureMode switch
-            {
-                CaptureMode.RearBody3D => "AR Body 3D",
-                CaptureMode.FrontUpperBody => "Front Upper",
-                CaptureMode.ImportedVideo => "Imported Video",
-                _ => "Mock Full Body",
-            };
+            return StudioL10n.CaptureModeTitle(motionSource.CaptureMode);
         }
 
         private void UpdateCameraViewport()

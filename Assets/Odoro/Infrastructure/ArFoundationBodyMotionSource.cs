@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.XR.ARFoundation;
@@ -40,7 +41,10 @@ namespace Odoro
         private ARPoseDriver arPoseDriver;
         private Camera arCamera;
         private MotionSourceActivity currentActivity;
+        private Coroutine availabilityRoutine;
+        private string lastStatusText;
         private bool bodyDetected;
+        private bool active;
 
         private void Awake()
         {
@@ -49,6 +53,7 @@ namespace Odoro
 
         private void OnEnable()
         {
+            ARSession.stateChanged += HandleSessionStateChanged;
             if (humanBodyManager != null)
             {
                 humanBodyManager.humanBodiesChanged += HandleHumanBodiesChanged;
@@ -57,6 +62,7 @@ namespace Odoro
 
         private void OnDisable()
         {
+            ARSession.stateChanged -= HandleSessionStateChanged;
             if (humanBodyManager != null)
             {
                 humanBodyManager.humanBodiesChanged -= HandleHumanBodiesChanged;
@@ -66,28 +72,44 @@ namespace Odoro
         public void Activate(MotionSourceActivity activity)
         {
             currentActivity = activity;
+            active = true;
+            bodyDetected = false;
 
             if (!IsSupported)
             {
-                OnStatusTextChanged?.Invoke(StudioL10n.StatusArUnsupported);
+                EmitStatusText(StudioL10n.StatusArUnsupported);
                 return;
             }
 
             EnsureSceneGraph();
-            bodyDetected = false;
             arSessionObject.SetActive(true);
             xrOriginObject.SetActive(true);
             arSession.enabled = true;
-            humanBodyManager.enabled = true;
-            arCameraManager.enabled = true;
-            arCameraBackground.enabled = true;
-            arPoseDriver.enabled = true;
-            OnStatusTextChanged?.Invoke(StudioL10n.StatusArPreparing);
+            arSession.requestedTrackingMode = TrackingMode.PositionAndRotation;
+            humanBodyManager.enabled = false;
+            arCameraManager.enabled = false;
+            arCameraBackground.enabled = false;
+            arPoseDriver.enabled = false;
+
+            if (availabilityRoutine != null)
+            {
+                StopCoroutine(availabilityRoutine);
+            }
+
+            availabilityRoutine = StartCoroutine(CheckAvailabilityAndStart());
         }
 
         public void Deactivate()
         {
+            active = false;
             bodyDetected = false;
+            lastStatusText = null;
+
+            if (availabilityRoutine != null)
+            {
+                StopCoroutine(availabilityRoutine);
+                availabilityRoutine = null;
+            }
 
             if (humanBodyManager != null)
             {
@@ -122,6 +144,56 @@ namespace Odoro
 
         public void Tick(float now)
         {
+            if (!active || !IsSupported)
+            {
+                return;
+            }
+
+            if (arCameraManager != null && !arCameraManager.permissionGranted)
+            {
+                EmitStatusText(StudioL10n.StatusArNeedsCameraPermission);
+            }
+        }
+
+        private IEnumerator CheckAvailabilityAndStart()
+        {
+            EmitStatusText(StudioL10n.StatusArCheckingAvailability);
+            yield return ARSession.CheckAvailability();
+
+            if (!active)
+            {
+                availabilityRoutine = null;
+                yield break;
+            }
+
+            if (ARSession.state == ARSessionState.NeedsInstall)
+            {
+                EmitStatusText(StudioL10n.StatusArNeedsInstall);
+                yield return ARSession.Install();
+            }
+
+            if (ARSession.state is ARSessionState.Unsupported or ARSessionState.None)
+            {
+                EmitStatusText(StudioL10n.StatusArUnsupported);
+                availabilityRoutine = null;
+                yield break;
+            }
+
+            arCameraManager.enabled = true;
+            arCameraBackground.enabled = true;
+            arPoseDriver.enabled = true;
+            humanBodyManager.enabled = true;
+
+            if (!arCameraManager.permissionGranted)
+            {
+                EmitStatusText(StudioL10n.StatusArNeedsCameraPermission);
+            }
+            else
+            {
+                EmitStatusText(StudioL10n.StatusArPreparing);
+            }
+
+            availabilityRoutine = null;
         }
 
         private void EnsureSceneGraph()
@@ -164,6 +236,40 @@ namespace Odoro
             xrOriginObject.SetActive(false);
         }
 
+        private void HandleSessionStateChanged(ARSessionStateChangedEventArgs eventArgs)
+        {
+            if (!active)
+            {
+                return;
+            }
+
+            switch (eventArgs.state)
+            {
+                case ARSessionState.CheckingAvailability:
+                    EmitStatusText(StudioL10n.StatusArCheckingAvailability);
+                    break;
+                case ARSessionState.NeedsInstall:
+                case ARSessionState.Installing:
+                    EmitStatusText(StudioL10n.StatusArNeedsInstall);
+                    break;
+                case ARSessionState.Unsupported:
+                    EmitStatusText(StudioL10n.StatusArUnsupported);
+                    break;
+                case ARSessionState.Ready:
+                    EmitStatusText(StudioL10n.StatusArPreparing);
+                    break;
+                case ARSessionState.SessionInitializing:
+                    EmitStatusText(StudioL10n.StatusArSessionInitializing);
+                    break;
+                case ARSessionState.SessionTracking:
+                    if (!bodyDetected)
+                    {
+                        EmitStatusText(StudioL10n.StatusArLost);
+                    }
+                    break;
+            }
+        }
+
         private void HandleHumanBodiesChanged(ARHumanBodiesChangedEventArgs eventArgs)
         {
             var body = FirstTrackedBody(eventArgs);
@@ -172,7 +278,7 @@ namespace Odoro
                 if (bodyDetected)
                 {
                     bodyDetected = false;
-                    OnStatusTextChanged?.Invoke(StudioL10n.StatusArLost);
+                    EmitStatusText(StudioL10n.StatusArLost);
                 }
 
                 return;
@@ -181,11 +287,22 @@ namespace Odoro
             if (!bodyDetected)
             {
                 bodyDetected = true;
-                OnStatusTextChanged?.Invoke(StudioL10n.StatusArDetected);
+                EmitStatusText(StudioL10n.StatusArDetected);
             }
 
             var frame = MakeFrame(body);
             OnFrame?.Invoke(frame);
+        }
+
+        private void EmitStatusText(string statusText)
+        {
+            if (string.Equals(lastStatusText, statusText, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lastStatusText = statusText;
+            OnStatusTextChanged?.Invoke(statusText);
         }
 
         private static ARHumanBody FirstTrackedBody(ARHumanBodiesChangedEventArgs eventArgs)

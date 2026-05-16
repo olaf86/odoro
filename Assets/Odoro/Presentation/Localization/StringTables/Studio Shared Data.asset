@@ -251,6 +251,22 @@ MonoBehaviour:
     m_Key: format.fixed-duration-seconds
     m_Metadata:
       m_Items: []
+  - m_Id: 17966400790528
+    m_Key: status.ar-checking-availability
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984832
+    m_Key: status.ar-needs-install
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984833
+    m_Key: status.ar-needs-camera-permission
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984834
+    m_Key: status.ar-session-initializing
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

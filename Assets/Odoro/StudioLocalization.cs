@@ -61,6 +61,10 @@ namespace Odoro
         public static string StatusMockPreview => Get("status.mock-preview");
         public static string StatusMockRecording => Get("status.mock-recording");
         public static string StatusArPreparing => Get("status.ar-preparing");
+        public static string StatusArCheckingAvailability => Get("status.ar-checking-availability");
+        public static string StatusArNeedsInstall => Get("status.ar-needs-install");
+        public static string StatusArNeedsCameraPermission => Get("status.ar-needs-camera-permission");
+        public static string StatusArSessionInitializing => Get("status.ar-session-initializing");
         public static string StatusArDetected => Get("status.ar-detected");
         public static string StatusArLost => Get("status.ar-lost");
         public static string StatusArUnsupported => Get("status.ar-unsupported");

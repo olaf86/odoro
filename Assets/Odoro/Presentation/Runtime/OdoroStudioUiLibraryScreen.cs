@@ -2,59 +2,85 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static Odoro.OdoroStudioUiFactory;
 
 namespace Odoro
 {
-    public sealed partial class OdoroStudioUiToolkitView
+    public sealed class LibraryScreenView
     {
-        private void BuildLibraryScreen()
+        public VisualElement Root { get; }
+
+        private readonly OdoroStudioUiActions actions;
+        private ScrollView scrollView;
+        private ButtonBinding backButton;
+        private Label titleLabel;
+        private Label subtitleLabel;
+        private Label emptyLabel;
+        private Label archiveRootLabel;
+
+        public LibraryScreenView(VisualElement parent, OdoroStudioUiActions actions)
         {
-            libraryScreen = CreateScreen("library-screen");
-            contentColumn.Add(libraryScreen);
+            this.actions = actions;
+            Root = CreateScreen("library-screen");
+            parent.Add(Root);
 
-            var libraryShell = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.94f), 22f);
-            libraryShell.style.flexGrow = 1f;
-            libraryShell.Add(BuildLibraryHeader());
-            libraryShell.Add(CreateSpacer(14f));
+            var shell = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.94f), 22f);
+            shell.style.flexGrow = 1f;
+            shell.Add(BuildHeader());
+            shell.Add(CreateSpacer(14f));
 
-            libraryEmptyLabel = CreateValueLabel(StudioL10n.LibraryEmpty);
-            libraryEmptyLabel.style.display = DisplayStyle.None;
-            libraryShell.Add(libraryEmptyLabel);
+            emptyLabel = CreateValueLabel(StudioL10n.LibraryEmpty);
+            emptyLabel.style.display = DisplayStyle.None;
+            shell.Add(emptyLabel);
 
-            libraryScrollView = new ScrollView(ScrollViewMode.Vertical);
-            libraryScrollView.style.flexGrow = 1f;
-            libraryScrollView.style.marginTop = 4f;
-            libraryShell.Add(libraryScrollView);
-            libraryShell.Add(CreateSpacer(12f));
+            scrollView = new ScrollView(ScrollViewMode.Vertical);
+            scrollView.style.flexGrow = 1f;
+            scrollView.style.marginTop = 4f;
+            shell.Add(scrollView);
+            shell.Add(CreateSpacer(12f));
 
             archiveRootLabel = CreateCaptionLabel(StudioL10n.ArchiveRootCaption);
-            libraryShell.Add(archiveRootLabel);
-            libraryScreen.Add(libraryShell);
+            shell.Add(archiveRootLabel);
+            Root.Add(shell);
         }
 
-        private VisualElement BuildLibraryHeader()
+        public void Render(LibraryScreenSnapshot snapshot)
         {
-            var libraryHeaderRow = CreateRow();
-            libraryHeaderRow.style.alignItems = Align.Center;
-            libraryBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
-            libraryBackButton.button.style.width = 84f;
-            libraryBackButton.button.style.marginRight = 10f;
-            libraryHeaderRow.Add(libraryBackButton.button);
+            RenderLibrary(snapshot.clips ?? Array.Empty<MotionTakeSummary>());
+        }
 
-            var libraryTitleColumn = new VisualElement();
-            libraryTitleColumn.style.flexGrow = 1f;
-            libraryTitleLabel = CreateSectionLabel(StudioL10n.LibraryTitle);
-            librarySubtitleLabel = CreateSubtitleLabel(StudioL10n.LibrarySubtitle);
-            libraryTitleColumn.Add(libraryTitleLabel);
-            libraryTitleColumn.Add(librarySubtitleLabel);
-            libraryHeaderRow.Add(libraryTitleColumn);
-            return libraryHeaderRow;
+        public void RefreshLocalizedChrome()
+        {
+            backButton.label.text = StudioL10n.ButtonBack;
+            titleLabel.text = StudioL10n.LibraryTitle;
+            subtitleLabel.text = StudioL10n.LibrarySubtitle;
+            emptyLabel.text = StudioL10n.LibraryEmpty;
+            archiveRootLabel.text = StudioL10n.ArchiveRootCaption;
+        }
+
+        private VisualElement BuildHeader()
+        {
+            var headerRow = CreateRow();
+            headerRow.style.alignItems = Align.Center;
+            backButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            backButton.button.style.width = 84f;
+            backButton.button.style.marginRight = 10f;
+            headerRow.Add(backButton.button);
+
+            var titleColumn = new VisualElement();
+            titleColumn.style.flexGrow = 1f;
+            titleLabel = CreateSectionLabel(StudioL10n.LibraryTitle);
+            subtitleLabel = CreateSubtitleLabel(StudioL10n.LibrarySubtitle);
+            titleColumn.Add(titleLabel);
+            titleColumn.Add(subtitleLabel);
+            headerRow.Add(titleColumn);
+            return headerRow;
         }
 
         private void RenderLibrary(IReadOnlyList<MotionTakeSummary> takes)
         {
-            libraryScrollView.Clear();
-            libraryEmptyLabel.style.display = takes.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            scrollView.Clear();
+            emptyLabel.style.display = takes.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
 
             for (var index = 0; index < takes.Count; index += 1)
             {
@@ -67,7 +93,7 @@ namespace Odoro
                 var openButton = CreatePrimaryButton(StudioL10n.OpenPlayback, () => actions.openTake?.Invoke(take), 40f);
                 openButton.button.style.marginTop = 10f;
                 card.Add(openButton.button);
-                libraryScrollView.Add(card);
+                scrollView.Add(card);
             }
         }
     }

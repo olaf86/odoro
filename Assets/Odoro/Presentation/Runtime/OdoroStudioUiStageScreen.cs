@@ -1,68 +1,102 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using static Odoro.OdoroStudioUiFactory;
 
 namespace Odoro
 {
-    public sealed partial class OdoroStudioUiToolkitView
+    public sealed class StageScreenView
     {
-        private void BuildStageScreen()
+        public VisualElement Root { get; }
+
+        private readonly OdoroStudioUiActions actions;
+        private ButtonBinding backButton;
+        private Label titleLabel;
+        private Label summaryLabel;
+        private Label modeLabel;
+        private Label hintLabel;
+        private ButtonBinding modelButton;
+        private ButtonBinding recordAgainButton;
+        private ButtonBinding playbackButton;
+        private ButtonBinding saveButton;
+
+        public StageScreenView(VisualElement parent, OdoroStudioUiActions actions)
         {
-            stageScreen = CreateScreen("stage-screen");
-            contentColumn.Add(stageScreen);
-            stageScreen.Add(BuildStageHeader());
+            this.actions = actions;
+            Root = CreateScreen("stage-screen");
+            parent.Add(Root);
+            Root.Add(BuildHeader());
 
-            var stageSpacer = new VisualElement();
-            stageSpacer.style.flexGrow = 1f;
-            stageScreen.Add(stageSpacer);
+            var spacer = new VisualElement();
+            spacer.style.flexGrow = 1f;
+            Root.Add(spacer);
 
-            stageScreen.Add(BuildStageFooter());
+            Root.Add(BuildFooter());
         }
 
-        private VisualElement BuildStageHeader()
+        public void Render(StageScreenSnapshot snapshot)
         {
-            var stageHeader = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            stageBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
-            stageBackButton.button.style.width = 84f;
-            stageBackButton.button.style.marginBottom = 12f;
-            stageHeader.Add(stageBackButton.button);
-
-            stageTitleLabel = CreateTitleLabel();
-            stageSummaryLabel = CreateSubtitleLabel();
-            stageModeLabel = CreatePillLabel();
-            stageHeader.Add(stageTitleLabel);
-            stageHeader.Add(stageSummaryLabel);
-            stageHeader.Add(CreateSpacer(10f));
-            stageHeader.Add(stageModeLabel);
-            return stageHeader;
+            titleLabel.text = snapshot.title;
+            summaryLabel.text = snapshot.summary;
+            modeLabel.text = snapshot.modeLabel;
+            hintLabel.text = snapshot.hint;
+            playbackButton.label.text = snapshot.isPlaying ? StudioL10n.ButtonPause : StudioL10n.ButtonPlay;
+            playbackButton.button.SetEnabled(snapshot.hasSelectedClip);
         }
 
-        private VisualElement BuildStageFooter()
+        public void RefreshLocalizedChrome(bool isPlaying)
         {
-            var stageFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            var stageQuickActions = CreateRow();
-            stageModelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
-            stageModelButton.button.style.marginRight = 10f;
-            stageQuickActions.Add(stageModelButton.button);
-            stageRecordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
-            stageQuickActions.Add(stageRecordAgainButton.button);
-            stageFooter.Add(stageQuickActions);
-            stageFooter.Add(CreateSpacer(14f));
+            backButton.label.text = StudioL10n.ButtonBack;
+            modelButton.label.text = StudioL10n.ButtonModel;
+            recordAgainButton.label.text = StudioL10n.ButtonRecordAgain;
+            playbackButton.label.text = isPlaying ? StudioL10n.ButtonPause : StudioL10n.ButtonPlay;
+            saveButton.label.text = StudioL10n.ButtonSave;
+        }
 
-            var stageActionRow = CreateRow();
-            stagePlaybackButton = CreateSecondaryButton(StudioL10n.ButtonPlay, () => actions.togglePlayback?.Invoke(), 46f);
-            stagePlaybackButton.button.style.flexGrow = 1f;
-            stagePlaybackButton.button.style.marginRight = 10f;
-            stageSaveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
-            stageSaveButton.button.style.flexGrow = 1f;
-            stageActionRow.Add(stagePlaybackButton.button);
-            stageActionRow.Add(stageSaveButton.button);
-            stageFooter.Add(stageActionRow);
-            stageFooter.Add(CreateSpacer(12f));
+        private VisualElement BuildHeader()
+        {
+            var header = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
+            backButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
+            backButton.button.style.width = 84f;
+            backButton.button.style.marginBottom = 12f;
+            header.Add(backButton.button);
 
-            stageHintLabel = CreateCaptionLabel(string.Empty);
-            stageHintLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            stageFooter.Add(stageHintLabel);
-            return stageFooter;
+            titleLabel = CreateTitleLabel();
+            summaryLabel = CreateSubtitleLabel();
+            modeLabel = CreatePillLabel();
+            header.Add(titleLabel);
+            header.Add(summaryLabel);
+            header.Add(CreateSpacer(10f));
+            header.Add(modeLabel);
+            return header;
+        }
+
+        private VisualElement BuildFooter()
+        {
+            var footer = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
+            var quickActions = CreateRow();
+            modelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
+            modelButton.button.style.marginRight = 10f;
+            quickActions.Add(modelButton.button);
+            recordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
+            quickActions.Add(recordAgainButton.button);
+            footer.Add(quickActions);
+            footer.Add(CreateSpacer(14f));
+
+            var actionRow = CreateRow();
+            playbackButton = CreateSecondaryButton(StudioL10n.ButtonPlay, () => actions.togglePlayback?.Invoke(), 46f);
+            playbackButton.button.style.flexGrow = 1f;
+            playbackButton.button.style.marginRight = 10f;
+            saveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
+            saveButton.button.style.flexGrow = 1f;
+            actionRow.Add(playbackButton.button);
+            actionRow.Add(saveButton.button);
+            footer.Add(actionRow);
+            footer.Add(CreateSpacer(12f));
+
+            hintLabel = CreateCaptionLabel(string.Empty);
+            hintLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+            footer.Add(hintLabel);
+            return footer;
         }
     }
 }

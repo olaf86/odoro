@@ -30,26 +30,50 @@ namespace Odoro
     public sealed class OdoroStudioUiSnapshot
     {
         public StudioScreen screen;
-        public MotionStudioState state;
-        public MotionRecordingContext recordingContext;
-        public CaptureMode captureMode;
-        public MotionClip selectedClip;
-        public MotionTakeSummary selectedTake;
-        public IReadOnlyList<MotionTakeSummary> libraryClips;
-        public bool hasAvatar;
         public string transientMessage;
-        public string captureHeadline;
-        public string captureSummary;
-        public string captureStatus;
-        public string captureModeLabel;
-        public string captureMetrics;
-        public string captureTrackingSignal;
-        public Color captureTrackingSignalColor;
-        public float captureProgress;
-        public bool captureSkeletonVisible;
-        public string stageTitle;
-        public string stageSummary;
-        public string stageModeLabel;
-        public string stageHint;
+        public CaptureScreenSnapshot capture;
+        public RecordingSettingsScreenSnapshot settings;
+        public StageScreenSnapshot stage;
+        public LibraryScreenSnapshot library;
+    }
+
+    public sealed class CaptureScreenSnapshot
+    {
+        public string headline;
+        public string summary;
+        public string status;
+        public string modeLabel;
+        public string metrics;
+        public string trackingSignal;
+        public Color trackingSignalColor;
+        public float progress;
+        public bool skeletonVisible;
+        public bool hasSelectedClip;
+        public bool isRecording;
+    }
+
+    public sealed class RecordingSettingsScreenSnapshot
+    {
+        public float bpm;
+        public int timeSignatureNumerator;
+        public int timeSignatureDenominator;
+        public int countInBarCount;
+        public float fixedCaptureDuration;
+        public bool skeletonVisible;
+    }
+
+    public sealed class StageScreenSnapshot
+    {
+        public bool hasSelectedClip;
+        public bool isPlaying;
+        public string title;
+        public string summary;
+        public string modeLabel;
+        public string hint;
+    }
+
+    public sealed class LibraryScreenSnapshot
+    {
+        public IReadOnlyList<MotionTakeSummary> clips;
     }
 }

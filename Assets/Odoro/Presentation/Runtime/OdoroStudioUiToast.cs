@@ -1,11 +1,14 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using static Odoro.OdoroStudioUiFactory;
 
 namespace Odoro
 {
-    public sealed partial class OdoroStudioUiToolkitView
+    public sealed class StudioToastView
     {
-        private void BuildToast()
+        private readonly Label toastLabel;
+
+        public StudioToastView(VisualElement parent)
         {
             toastLabel = CreateBodyLabel();
             toastLabel.name = "odoro-toast";
@@ -25,7 +28,19 @@ namespace Odoro
             toastLabel.style.display = DisplayStyle.None;
             toastLabel.style.color = Color.white;
             toastLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            safeAreaRoot.Add(toastLabel);
+            parent.Add(toastLabel);
+        }
+
+        public void Render(string message)
+        {
+            if (string.IsNullOrEmpty(message))
+            {
+                toastLabel.style.display = DisplayStyle.None;
+                return;
+            }
+
+            toastLabel.text = message;
+            toastLabel.style.display = DisplayStyle.Flex;
         }
     }
 }

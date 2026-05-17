@@ -278,29 +278,45 @@ namespace Odoro
             uiView.Render(new OdoroStudioUiSnapshot
             {
                 screen = screen,
-                state = interactor.State,
-                recordingContext = recordingContext,
-                captureMode = motionSource.CaptureMode,
-                selectedClip = selectedClip,
-                selectedTake = selectedTake,
-                libraryClips = libraryClips,
-                hasAvatar = avatarView != null && avatarView.IsAvailable,
                 transientMessage = transientMessage,
-                captureHeadline = CaptureProgressTitle(),
-                captureSummary = RecordingContextSummary(),
-                captureStatus = interactor.State.statusText,
-                captureModeLabel = CaptureModeLabel(),
-                captureMetrics = CaptureMetricsLabel(),
-                captureTrackingSignal = CaptureTrackingSignalLabel(),
-                captureTrackingSignalColor = CaptureTrackingSignalColor(),
-                captureProgress = CaptureProgressValue(),
-                captureSkeletonVisible = captureSkeletonVisible,
-                stageTitle = selectedTake != null ? selectedTake.DisplayName : StudioL10n.StageTitleFallback,
-                stageSummary = selectedClip != null ? StudioL10n.ClipSummary(selectedClip.Duration, selectedClip.FrameCount) : StudioL10n.StageNoClip,
-                stageModeLabel = avatarView != null && avatarView.IsAvailable ? StudioL10n.AvatarLabel : StudioL10n.SkeletonLabel,
-                stageHint = avatarView != null && avatarView.IsAvailable
-                    ? StudioL10n.StageHintAvatarActive
-                    : StudioL10n.StageHintAvatarMissing,
+                capture = new CaptureScreenSnapshot
+                {
+                    headline = CaptureProgressTitle(),
+                    summary = RecordingContextSummary(),
+                    status = interactor.State.statusText,
+                    modeLabel = CaptureModeLabel(),
+                    metrics = CaptureMetricsLabel(),
+                    trackingSignal = CaptureTrackingSignalLabel(),
+                    trackingSignalColor = CaptureTrackingSignalColor(),
+                    progress = CaptureProgressValue(),
+                    skeletonVisible = captureSkeletonVisible,
+                    hasSelectedClip = selectedClip != null,
+                    isRecording = interactor.State.isRecording,
+                },
+                settings = new RecordingSettingsScreenSnapshot
+                {
+                    bpm = recordingContext.bpm,
+                    timeSignatureNumerator = recordingContext.timeSignatureNumerator,
+                    timeSignatureDenominator = recordingContext.timeSignatureDenominator,
+                    countInBarCount = recordingContext.countInBarCount,
+                    fixedCaptureDuration = recordingContext.FixedCaptureDuration,
+                    skeletonVisible = captureSkeletonVisible,
+                },
+                stage = new StageScreenSnapshot
+                {
+                    hasSelectedClip = selectedClip != null,
+                    isPlaying = interactor.State.isPlaying,
+                    title = selectedTake != null ? selectedTake.DisplayName : StudioL10n.StageTitleFallback,
+                    summary = selectedClip != null ? StudioL10n.ClipSummary(selectedClip.Duration, selectedClip.FrameCount) : StudioL10n.StageNoClip,
+                    modeLabel = avatarView != null && avatarView.IsAvailable ? StudioL10n.AvatarLabel : StudioL10n.SkeletonLabel,
+                    hint = avatarView != null && avatarView.IsAvailable
+                        ? StudioL10n.StageHintAvatarActive
+                        : StudioL10n.StageHintAvatarMissing,
+                },
+                library = new LibraryScreenSnapshot
+                {
+                    clips = libraryClips,
+                },
             });
         }
 

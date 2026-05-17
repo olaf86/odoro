@@ -43,6 +43,7 @@ namespace Odoro
         private MotionSourceActivity currentActivity;
         private Coroutine availabilityRoutine;
         private string lastStatusText;
+        private ARSessionState lastSessionState = ARSessionState.None;
         private bool bodyDetected;
         private bool active;
 
@@ -149,7 +150,22 @@ namespace Odoro
                 return;
             }
 
-            if (arCameraManager != null && !arCameraManager.permissionGranted)
+            if (arCameraManager == null || !arCameraManager.enabled)
+            {
+                return;
+            }
+
+            if (arCameraManager.permissionGranted)
+            {
+                if (lastStatusText == StudioL10n.StatusArNeedsCameraPermission && !bodyDetected)
+                {
+                    EmitStatusText(StatusTextForSessionState(lastSessionState));
+                }
+
+                return;
+            }
+
+            if (lastSessionState is ARSessionState.Ready or ARSessionState.SessionInitializing or ARSessionState.SessionTracking)
             {
                 EmitStatusText(StudioL10n.StatusArNeedsCameraPermission);
             }
@@ -243,30 +259,11 @@ namespace Odoro
                 return;
             }
 
-            switch (eventArgs.state)
+            lastSessionState = eventArgs.state;
+
+            if (!bodyDetected)
             {
-                case ARSessionState.CheckingAvailability:
-                    EmitStatusText(StudioL10n.StatusArCheckingAvailability);
-                    break;
-                case ARSessionState.NeedsInstall:
-                case ARSessionState.Installing:
-                    EmitStatusText(StudioL10n.StatusArNeedsInstall);
-                    break;
-                case ARSessionState.Unsupported:
-                    EmitStatusText(StudioL10n.StatusArUnsupported);
-                    break;
-                case ARSessionState.Ready:
-                    EmitStatusText(StudioL10n.StatusArPreparing);
-                    break;
-                case ARSessionState.SessionInitializing:
-                    EmitStatusText(StudioL10n.StatusArSessionInitializing);
-                    break;
-                case ARSessionState.SessionTracking:
-                    if (!bodyDetected)
-                    {
-                        EmitStatusText(StudioL10n.StatusArLost);
-                    }
-                    break;
+                EmitStatusText(StatusTextForSessionState(eventArgs.state));
             }
         }
 
@@ -303,6 +300,20 @@ namespace Odoro
 
             lastStatusText = statusText;
             OnStatusTextChanged?.Invoke(statusText);
+        }
+
+        private string StatusTextForSessionState(ARSessionState state)
+        {
+            return state switch
+            {
+                ARSessionState.CheckingAvailability => StudioL10n.StatusArCheckingAvailability,
+                ARSessionState.NeedsInstall or ARSessionState.Installing => StudioL10n.StatusArNeedsInstall,
+                ARSessionState.Unsupported => StudioL10n.StatusArUnsupported,
+                ARSessionState.Ready => StudioL10n.StatusArPreparing,
+                ARSessionState.SessionInitializing => StudioL10n.StatusArSessionInitializing,
+                ARSessionState.SessionTracking => StudioL10n.StatusArLost,
+                _ => StudioL10n.StatusArPreparing,
+            };
         }
 
         private static ARHumanBody FirstTrackedBody(ARHumanBodiesChangedEventArgs eventArgs)

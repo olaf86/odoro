@@ -267,6 +267,46 @@ MonoBehaviour:
     m_Key: status.ar-session-initializing
     m_Metadata:
       m_Items: []
+  - m_Id: 17966404984835
+    m_Key: button.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984836
+    m_Key: button.done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984837
+    m_Key: button.skeleton-on
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984838
+    m_Key: button.skeleton-off
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984839
+    m_Key: format.recording-beat-progress
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984840
+    m_Key: format.capture-metrics
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984841
+    m_Key: format.skeleton-on
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984842
+    m_Key: format.skeleton-off
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984843
+    m_Key: tracking.good
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984844
+    m_Key: tracking.searching
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

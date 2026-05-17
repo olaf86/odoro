@@ -1,53 +1,10 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Odoro
 {
-    public sealed class OdoroStudioUiActions
-    {
-        public Action showCapture;
-        public Action showLibrary;
-        public Action showStage;
-        public Action startRecording;
-        public Action stopRecording;
-        public Action togglePlayback;
-        public Action showModelInfo;
-        public Action saveTake;
-        public Action decreaseBpm;
-        public Action increaseBpm;
-        public Action decreaseNumerator;
-        public Action increaseNumerator;
-        public Action decreaseDenominator;
-        public Action increaseDenominator;
-        public Action decreaseCountInBars;
-        public Action increaseCountInBars;
-        public Action<MotionTakeSummary> openTake;
-    }
-
-    public sealed class OdoroStudioUiSnapshot
-    {
-        public StudioScreen screen;
-        public MotionStudioState state;
-        public MotionRecordingContext recordingContext;
-        public CaptureMode captureMode;
-        public MotionClip selectedClip;
-        public MotionTakeSummary selectedTake;
-        public IReadOnlyList<MotionTakeSummary> libraryClips;
-        public bool hasAvatar;
-        public string transientMessage;
-        public string captureHeadline;
-        public string captureSummary;
-        public string captureStatus;
-        public string captureModeLabel;
-        public string stageTitle;
-        public string stageSummary;
-        public string stageModeLabel;
-        public string stageHint;
-    }
-
-    public sealed class OdoroStudioUiToolkitView : IDisposable
+    public sealed partial class OdoroStudioUiToolkitView : IDisposable
     {
         private sealed class StepperBinding
         {
@@ -71,43 +28,51 @@ namespace Odoro
         private readonly VisualElement root;
         private readonly VisualElement safeAreaRoot;
         private readonly VisualElement contentColumn;
-        private readonly VisualElement captureScreen;
-        private readonly VisualElement stageScreen;
-        private readonly VisualElement libraryScreen;
-        private readonly Label captureHeadlineLabel;
-        private readonly Label captureSummaryLabel;
-        private readonly Label captureModeLabel;
-        private readonly Label captureStatusLabel;
-        private readonly Label captureHintLabel;
-        private readonly Label sessionTitleLabel;
-        private readonly Label sessionSummaryLabel;
-        private readonly StepperBinding bpmStepper;
-        private readonly StepperBinding numeratorStepper;
-        private readonly StepperBinding denominatorStepper;
-        private readonly StepperBinding countInStepper;
-        private readonly Label fixedDurationTitleLabel;
-        private readonly Label fixedDurationLabel;
-        private readonly Label captureFooterLabel;
-        private readonly ButtonBinding captureLibraryButton;
-        private readonly ButtonBinding captureStageButton;
-        private readonly ButtonBinding captureRecordButton;
-        private readonly ButtonBinding captureStopButton;
-        private readonly ButtonBinding stageBackButton;
-        private readonly Label stageTitleLabel;
-        private readonly Label stageSummaryLabel;
-        private readonly Label stageModeLabel;
-        private readonly Label stageHintLabel;
-        private readonly ButtonBinding stageModelButton;
-        private readonly ButtonBinding stageRecordAgainButton;
-        private readonly ButtonBinding stagePlaybackButton;
-        private readonly ButtonBinding stageSaveButton;
-        private readonly ScrollView libraryScrollView;
-        private readonly ButtonBinding libraryBackButton;
-        private readonly Label libraryTitleLabel;
-        private readonly Label librarySubtitleLabel;
-        private readonly Label libraryEmptyLabel;
-        private readonly Label archiveRootLabel;
-        private readonly Label toastLabel;
+        private VisualElement captureScreen;
+        private VisualElement settingsScreen;
+        private VisualElement stageScreen;
+        private VisualElement libraryScreen;
+        private Label captureHeadlineLabel;
+        private Label captureSummaryLabel;
+        private Label captureModeLabel;
+        private Label captureStatusLabel;
+        private Label captureMetricsLabel;
+        private Label captureSkeletonStateLabel;
+        private Label captureTrackingSignalLabel;
+        private VisualElement captureTrackingDot;
+        private VisualElement captureProgressFill;
+        private Label sessionTitleLabel;
+        private Label sessionSummaryLabel;
+        private StepperBinding bpmStepper;
+        private StepperBinding numeratorStepper;
+        private StepperBinding denominatorStepper;
+        private StepperBinding countInStepper;
+        private Label fixedDurationTitleLabel;
+        private Label fixedDurationLabel;
+        private Label captureFooterLabel;
+        private ButtonBinding captureLibraryButton;
+        private ButtonBinding captureStageButton;
+        private ButtonBinding captureSettingsButton;
+        private ButtonBinding captureRecordButton;
+        private ButtonBinding captureStopButton;
+        private ButtonBinding settingsBackButton;
+        private ButtonBinding settingsSkeletonButton;
+        private ButtonBinding stageBackButton;
+        private Label stageTitleLabel;
+        private Label stageSummaryLabel;
+        private Label stageModeLabel;
+        private Label stageHintLabel;
+        private ButtonBinding stageModelButton;
+        private ButtonBinding stageRecordAgainButton;
+        private ButtonBinding stagePlaybackButton;
+        private ButtonBinding stageSaveButton;
+        private ScrollView libraryScrollView;
+        private ButtonBinding libraryBackButton;
+        private Label libraryTitleLabel;
+        private Label librarySubtitleLabel;
+        private Label libraryEmptyLabel;
+        private Label archiveRootLabel;
+        private Label toastLabel;
         private readonly OdoroStudioUiActions actions;
 
         public OdoroStudioUiToolkitView(GameObject host, OdoroStudioUiActions actions)
@@ -149,188 +114,18 @@ namespace Odoro
             contentColumn.style.paddingBottom = 14f;
             safeAreaRoot.Add(contentColumn);
 
-            captureScreen = CreateScreen("capture-screen");
-            contentColumn.Add(captureScreen);
-
-            var captureHeader = CreatePanel(new Color(0.14f, 0.17f, 0.22f, 0.84f), 22f);
-            captureHeadlineLabel = CreateTitleLabel();
-            captureSummaryLabel = CreateSubtitleLabel();
-            captureModeLabel = CreatePillLabel();
-            captureStatusLabel = CreateBodyLabel();
-            captureHintLabel = CreateCaptionLabel(StudioL10n.CaptureHint);
-
-            captureHeader.Add(captureHeadlineLabel);
-            captureHeader.Add(captureSummaryLabel);
-            captureHeader.Add(CreateSpacer(10f));
-            captureHeader.Add(captureModeLabel);
-            captureHeader.Add(CreateSpacer(10f));
-            captureHeader.Add(captureStatusLabel);
-            captureHeader.Add(CreateSpacer(8f));
-            captureHeader.Add(captureHintLabel);
-            captureScreen.Add(captureHeader);
-
-            var sessionPanel = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.92f), 22f);
-            sessionPanel.style.marginTop = 12f;
-            sessionTitleLabel = CreateSectionLabel(StudioL10n.RecordingSessionTitle);
-            sessionSummaryLabel = CreateSubtitleLabel(StudioL10n.RecordingSessionHint);
-            sessionPanel.Add(sessionTitleLabel);
-            sessionPanel.Add(sessionSummaryLabel);
-
-            bpmStepper = AddStepper(sessionPanel, StudioL10n.SessionBpmTitle, actions.decreaseBpm, actions.increaseBpm);
-            numeratorStepper = AddStepper(sessionPanel, StudioL10n.SessionNumeratorTitle, actions.decreaseNumerator, actions.increaseNumerator);
-            denominatorStepper = AddStepper(sessionPanel, StudioL10n.SessionDenominatorTitle, actions.decreaseDenominator, actions.increaseDenominator);
-            countInStepper = AddStepper(sessionPanel, StudioL10n.SessionCountInTitle, actions.decreaseCountInBars, actions.increaseCountInBars);
-
-            var durationCard = CreateCard();
-            durationCard.style.marginTop = 10f;
-            fixedDurationTitleLabel = CreateCaptionLabel(StudioL10n.FixedCaptureDurationTitle);
-            fixedDurationLabel = CreateValueLabel();
-            durationCard.Add(fixedDurationTitleLabel);
-            durationCard.Add(fixedDurationLabel);
-            sessionPanel.Add(durationCard);
-            captureScreen.Add(sessionPanel);
-
-            var captureSpacer = new VisualElement();
-            captureSpacer.style.flexGrow = 1f;
-            captureScreen.Add(captureSpacer);
-
-            var captureFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            var captureQuickActions = CreateRow();
-            captureLibraryButton = CreateSecondaryButton(StudioL10n.ButtonLibrary, () => actions.showLibrary?.Invoke());
-            captureLibraryButton.button.style.marginRight = 10f;
-            captureQuickActions.Add(captureLibraryButton.button);
-            captureStageButton = CreateSecondaryButton(StudioL10n.ButtonStage, () => actions.showStage?.Invoke());
-            captureQuickActions.Add(captureStageButton.button);
-            captureFooter.Add(captureQuickActions);
-            captureFooter.Add(CreateSpacer(14f));
-
-            var recordRow = CreateRow();
-            recordRow.style.justifyContent = Justify.Center;
-            recordRow.style.alignItems = Align.Center;
-            captureRecordButton = CreatePrimaryButton(StudioL10n.ButtonRecord, () => actions.startRecording?.Invoke(), 54f);
-            captureRecordButton.button.style.minWidth = 132f;
-            captureRecordButton.button.style.marginRight = 18f;
-            captureStopButton = CreateDangerButton(StudioL10n.ButtonStop, () => actions.stopRecording?.Invoke(), 54f);
-            captureStopButton.button.style.minWidth = 132f;
-            recordRow.Add(captureRecordButton.button);
-            recordRow.Add(captureStopButton.button);
-            captureFooter.Add(recordRow);
-            captureFooter.Add(CreateSpacer(12f));
-
-            captureFooterLabel = CreateCaptionLabel(string.Empty);
-            captureFooterLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            captureFooter.Add(captureFooterLabel);
-            captureScreen.Add(captureFooter);
-
-            stageScreen = CreateScreen("stage-screen");
-            contentColumn.Add(stageScreen);
-
-            var stageHeader = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            stageBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
-            stageBackButton.button.style.width = 84f;
-            stageBackButton.button.style.marginBottom = 12f;
-            stageHeader.Add(stageBackButton.button);
-
-            stageTitleLabel = CreateTitleLabel();
-            stageSummaryLabel = CreateSubtitleLabel();
-            stageModeLabel = CreatePillLabel();
-            stageHeader.Add(stageTitleLabel);
-            stageHeader.Add(stageSummaryLabel);
-            stageHeader.Add(CreateSpacer(10f));
-            stageHeader.Add(stageModeLabel);
-            stageScreen.Add(stageHeader);
-
-            var stageSpacer = new VisualElement();
-            stageSpacer.style.flexGrow = 1f;
-            stageScreen.Add(stageSpacer);
-
-            var stageFooter = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
-            var stageQuickActions = CreateRow();
-            stageModelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
-            stageModelButton.button.style.marginRight = 10f;
-            stageQuickActions.Add(stageModelButton.button);
-            stageRecordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());
-            stageQuickActions.Add(stageRecordAgainButton.button);
-            stageFooter.Add(stageQuickActions);
-            stageFooter.Add(CreateSpacer(14f));
-
-            var stageActionRow = CreateRow();
-            stagePlaybackButton = CreateSecondaryButton(StudioL10n.ButtonPlay, () => actions.togglePlayback?.Invoke(), 46f);
-            stagePlaybackButton.button.style.flexGrow = 1f;
-            stagePlaybackButton.button.style.marginRight = 10f;
-            stageSaveButton = CreatePrimaryButton(StudioL10n.ButtonSave, () => actions.saveTake?.Invoke(), 46f);
-            stageSaveButton.button.style.flexGrow = 1f;
-            stageActionRow.Add(stagePlaybackButton.button);
-            stageActionRow.Add(stageSaveButton.button);
-            stageFooter.Add(stageActionRow);
-            stageFooter.Add(CreateSpacer(12f));
-
-            stageHintLabel = CreateCaptionLabel(string.Empty);
-            stageHintLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
-            stageFooter.Add(stageHintLabel);
-            stageScreen.Add(stageFooter);
-
-            libraryScreen = CreateScreen("library-screen");
-            contentColumn.Add(libraryScreen);
-
-            var libraryShell = CreatePanel(new Color(0.08f, 0.10f, 0.14f, 0.94f), 22f);
-            libraryShell.style.flexGrow = 1f;
-            var libraryHeaderRow = CreateRow();
-            libraryHeaderRow.style.alignItems = Align.Center;
-            libraryBackButton = CreateSecondaryButton(StudioL10n.ButtonBack, () => actions.showCapture?.Invoke());
-            libraryBackButton.button.style.width = 84f;
-            libraryBackButton.button.style.marginRight = 10f;
-            libraryHeaderRow.Add(libraryBackButton.button);
-
-            var libraryTitleColumn = new VisualElement();
-            libraryTitleColumn.style.flexGrow = 1f;
-            libraryTitleLabel = CreateSectionLabel(StudioL10n.LibraryTitle);
-            librarySubtitleLabel = CreateSubtitleLabel(StudioL10n.LibrarySubtitle);
-            libraryTitleColumn.Add(libraryTitleLabel);
-            libraryTitleColumn.Add(librarySubtitleLabel);
-            libraryHeaderRow.Add(libraryTitleColumn);
-            libraryShell.Add(libraryHeaderRow);
-            libraryShell.Add(CreateSpacer(14f));
-
-            libraryEmptyLabel = CreateValueLabel(StudioL10n.LibraryEmpty);
-            libraryEmptyLabel.style.display = DisplayStyle.None;
-            libraryShell.Add(libraryEmptyLabel);
-
-            libraryScrollView = new ScrollView(ScrollViewMode.Vertical);
-            libraryScrollView.style.flexGrow = 1f;
-            libraryScrollView.style.marginTop = 4f;
-            libraryShell.Add(libraryScrollView);
-            libraryShell.Add(CreateSpacer(12f));
-
-            archiveRootLabel = CreateCaptionLabel(StudioL10n.ArchiveRootCaption);
-            libraryShell.Add(archiveRootLabel);
-            libraryScreen.Add(libraryShell);
-
-            toastLabel = CreateBodyLabel();
-            toastLabel.name = "odoro-toast";
-            toastLabel.style.position = Position.Absolute;
-            toastLabel.style.left = 24f;
-            toastLabel.style.right = 24f;
-            toastLabel.style.bottom = 18f;
-            toastLabel.style.paddingLeft = 14f;
-            toastLabel.style.paddingRight = 14f;
-            toastLabel.style.paddingTop = 10f;
-            toastLabel.style.paddingBottom = 10f;
-            toastLabel.style.backgroundColor = Palette.Toast;
-            toastLabel.style.borderTopLeftRadius = 18f;
-            toastLabel.style.borderTopRightRadius = 18f;
-            toastLabel.style.borderBottomLeftRadius = 18f;
-            toastLabel.style.borderBottomRightRadius = 18f;
-            toastLabel.style.display = DisplayStyle.None;
-            toastLabel.style.color = Color.white;
-            toastLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            safeAreaRoot.Add(toastLabel);
+            BuildCaptureScreen();
+            BuildRecordingSettingsScreen();
+            BuildStageScreen();
+            BuildLibraryScreen();
+            BuildToast();
         }
 
         public void Render(OdoroStudioUiSnapshot snapshot)
         {
             RefreshLocalizedChrome(snapshot);
             captureScreen.style.display = snapshot.screen == StudioScreen.Capture ? DisplayStyle.Flex : DisplayStyle.None;
+            settingsScreen.style.display = snapshot.screen == StudioScreen.RecordingSettings ? DisplayStyle.Flex : DisplayStyle.None;
             stageScreen.style.display = snapshot.screen == StudioScreen.Stage ? DisplayStyle.Flex : DisplayStyle.None;
             libraryScreen.style.display = snapshot.screen == StudioScreen.ClipsLibrary ? DisplayStyle.Flex : DisplayStyle.None;
 
@@ -338,6 +133,11 @@ namespace Odoro
             captureSummaryLabel.text = snapshot.captureSummary;
             captureModeLabel.text = snapshot.captureModeLabel;
             captureStatusLabel.text = snapshot.captureStatus;
+            captureMetricsLabel.text = snapshot.captureMetrics;
+            captureSkeletonStateLabel.text = StudioL10n.SkeletonState(snapshot.captureSkeletonVisible);
+            captureTrackingSignalLabel.text = snapshot.captureTrackingSignal;
+            captureTrackingDot.style.backgroundColor = snapshot.captureTrackingSignalColor;
+            captureProgressFill.style.width = new Length(Mathf.Clamp01(snapshot.captureProgress) * 100f, LengthUnit.Percent);
             sessionSummaryLabel.text = StudioL10n.RecordingSessionSummary(
                 Mathf.RoundToInt(snapshot.recordingContext.bpm),
                 snapshot.recordingContext.timeSignatureNumerator,
@@ -354,8 +154,12 @@ namespace Odoro
                 : StudioL10n.CapturePromptToRecord;
 
             captureStageButton.button.SetEnabled(snapshot.selectedClip != null && !snapshot.state.isRecording);
+            captureSettingsButton.button.SetEnabled(!snapshot.state.isRecording);
             captureRecordButton.button.SetEnabled(!snapshot.state.isRecording);
             captureStopButton.button.SetEnabled(snapshot.state.isRecording);
+            settingsSkeletonButton.label.text = snapshot.captureSkeletonVisible
+                ? StudioL10n.ButtonSkeletonOff
+                : StudioL10n.ButtonSkeletonOn;
 
             stageTitleLabel.text = snapshot.stageTitle;
             stageSummaryLabel.text = snapshot.stageSummary;
@@ -412,7 +216,6 @@ namespace Odoro
 
         private void RefreshLocalizedChrome(OdoroStudioUiSnapshot snapshot)
         {
-            captureHintLabel.text = StudioL10n.CaptureHint;
             sessionTitleLabel.text = StudioL10n.RecordingSessionTitle;
             bpmStepper.titleLabel.text = StudioL10n.SessionBpmTitle;
             numeratorStepper.titleLabel.text = StudioL10n.SessionNumeratorTitle;
@@ -421,8 +224,10 @@ namespace Odoro
             fixedDurationTitleLabel.text = StudioL10n.FixedCaptureDurationTitle;
             captureLibraryButton.label.text = StudioL10n.ButtonLibrary;
             captureStageButton.label.text = StudioL10n.ButtonStage;
+            captureSettingsButton.label.text = StudioL10n.ButtonSettings;
             captureRecordButton.label.text = StudioL10n.ButtonRecord;
             captureStopButton.label.text = StudioL10n.ButtonStop;
+            settingsBackButton.label.text = StudioL10n.ButtonDone;
             stageBackButton.label.text = StudioL10n.ButtonBack;
             stageModelButton.label.text = StudioL10n.ButtonModel;
             stageRecordAgainButton.label.text = StudioL10n.ButtonRecordAgain;
@@ -433,26 +238,6 @@ namespace Odoro
             librarySubtitleLabel.text = StudioL10n.LibrarySubtitle;
             libraryEmptyLabel.text = StudioL10n.LibraryEmpty;
             archiveRootLabel.text = StudioL10n.ArchiveRootCaption;
-        }
-
-        private void RenderLibrary(IReadOnlyList<MotionTakeSummary> takes)
-        {
-            libraryScrollView.Clear();
-            libraryEmptyLabel.style.display = takes.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
-
-            for (var index = 0; index < takes.Count; index += 1)
-            {
-                var take = takes[index];
-                var card = CreateCard();
-                card.style.marginBottom = 10f;
-                card.Add(CreateValueLabel(take.DisplayName));
-                card.Add(CreateCaptionLabel(take.SecondarySummary));
-
-                var openButton = CreatePrimaryButton(StudioL10n.OpenPlayback, () => actions.openTake?.Invoke(take), 40f);
-                openButton.button.style.marginTop = 10f;
-                card.Add(openButton.button);
-                libraryScrollView.Add(card);
-            }
         }
 
         private StepperBinding AddStepper(VisualElement parent, string title, Action decrease, Action increase)

@@ -52,6 +52,10 @@ namespace Odoro
         public static string ButtonSave => Get("button.save");
         public static string ButtonPlay => Get("button.play");
         public static string ButtonPause => Get("button.pause");
+        public static string ButtonSettings => Get("button.settings");
+        public static string ButtonDone => Get("button.done");
+        public static string ButtonSkeletonOn => Get("button.skeleton-on");
+        public static string ButtonSkeletonOff => Get("button.skeleton-off");
         public static string ArchiveRootCaption => Get("archive.root-caption");
 
         public static string StatusPreviewIdle => Get("status.preview-idle");
@@ -94,10 +98,28 @@ namespace Odoro
             return Get("format.recording-progress", current, duration);
         }
 
+        public static string RecordingBeatProgress(int currentBeat, int totalBeats)
+        {
+            return Get("format.recording-beat-progress", currentBeat, totalBeats);
+        }
+
         public static string CaptureBeatSummary(int bars, int bpm)
         {
             return Get("format.capture-beat-summary", bars, bpm);
         }
+
+        public static string CaptureMetrics(float fps, int width, int height)
+        {
+            return Get("format.capture-metrics", fps, width, height);
+        }
+
+        public static string SkeletonState(bool isVisible)
+        {
+            return isVisible ? Get("format.skeleton-on") : Get("format.skeleton-off");
+        }
+
+        public static string TrackingGood => Get("tracking.good");
+        public static string TrackingSearching => Get("tracking.searching");
 
         public static string ClipSummary(float durationSeconds, int frameCount)
         {

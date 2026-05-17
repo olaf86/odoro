@@ -272,6 +272,46 @@ MonoBehaviour:
     m_Localized: AR session is starting. Keep the device steady.
     m_Metadata:
       m_Items: []
+  - m_Id: 17966404984835
+    m_Localized: Settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984836
+    m_Localized: Done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984837
+    m_Localized: Show Skeleton
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984838
+    m_Localized: Hide Skeleton
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984839
+    m_Localized: Beat {0} / {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984840
+    m_Localized: "{0:0} FPS \u2022 {1}x{2}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984841
+    m_Localized: Skeleton ON
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984842
+    m_Localized: Skeleton OFF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984843
+    m_Localized: "Tracking: good"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17966404984844
+    m_Localized: "Tracking: searching"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

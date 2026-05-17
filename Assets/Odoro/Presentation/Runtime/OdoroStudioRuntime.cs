@@ -6,6 +6,9 @@ namespace Odoro
 {
     public sealed class OdoroStudioRuntime : MonoBehaviour
     {
+        private const int CapturePreviewSkeletonFrameInterval = 10;
+        private const float TrackingSignalFreshnessSeconds = 0.75f;
+
         private MotionArchiveStore archiveStore;
         private IMotionSource motionSource;
         private MotionStudioInteractor interactor;
@@ -25,6 +28,12 @@ namespace Odoro
         private float transientMessageExpiresAt;
         private float playbackTime;
         private bool stageLoopPlayback = true;
+        private bool captureSkeletonVisible = true;
+        private int capturePreviewSkeletonFrameCounter;
+        private bool capturePreviewSkeletonFrameReady;
+        private float lastMotionFrameReceivedAt = -1f;
+        private float lastMotionFrameSourceTime = -1f;
+        private float liveMotionFps;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -105,7 +114,7 @@ namespace Odoro
             else
             {
                 avatarView?.SetVisible(false);
-                skeletonView.SetFrame(latestPreviewFrame, Palette.CaptureSkeleton);
+                UpdateCaptureSkeletonPreview();
             }
 
             if (!string.IsNullOrEmpty(transientMessage) && Time.unscaledTime > transientMessageExpiresAt)
@@ -158,7 +167,30 @@ namespace Odoro
 
         private void ConfigureInteractor()
         {
-            motionSource.OnFrame += frame => { latestPreviewFrame = frame; };
+            motionSource.OnFrame += frame =>
+            {
+                latestPreviewFrame = frame;
+                lastMotionFrameReceivedAt = Time.unscaledTime;
+
+                if (lastMotionFrameSourceTime >= 0f)
+                {
+                    var delta = Mathf.Max(0.0001f, frame.time - lastMotionFrameSourceTime);
+                    var instantFps = 1f / delta;
+                    liveMotionFps = liveMotionFps <= 0f ? instantFps : Mathf.Lerp(liveMotionFps, instantFps, 0.15f);
+                }
+
+                lastMotionFrameSourceTime = frame.time;
+
+                if (interactor == null || interactor.State.isRecording)
+                {
+                    capturePreviewSkeletonFrameReady = true;
+                    return;
+                }
+
+                capturePreviewSkeletonFrameCounter =
+                    (capturePreviewSkeletonFrameCounter + 1) % CapturePreviewSkeletonFrameInterval;
+                capturePreviewSkeletonFrameReady = capturePreviewSkeletonFrameCounter == 0;
+            };
             motionSource.OnStatusTextChanged += interactor.SetStatusText;
             interactor.OnStateChanged += _ => RefreshUi();
 
@@ -182,10 +214,12 @@ namespace Odoro
             uiView = new OdoroStudioUiToolkitView(gameObject, new OdoroStudioUiActions
             {
                 showCapture = ShowCapture,
+                showSettings = ShowSettings,
                 showLibrary = ShowLibrary,
                 showStage = ShowStage,
                 startRecording = StartRecording,
                 stopRecording = StopRecording,
+                toggleSkeleton = ToggleCaptureSkeleton,
                 togglePlayback = TogglePlayback,
                 showModelInfo = ShowModelInfo,
                 saveTake = SaveTakeReminder,
@@ -256,6 +290,11 @@ namespace Odoro
                 captureSummary = RecordingContextSummary(),
                 captureStatus = interactor.State.statusText,
                 captureModeLabel = CaptureModeLabel(),
+                captureMetrics = CaptureMetricsLabel(),
+                captureTrackingSignal = CaptureTrackingSignalLabel(),
+                captureTrackingSignalColor = CaptureTrackingSignalColor(),
+                captureProgress = CaptureProgressValue(),
+                captureSkeletonVisible = captureSkeletonVisible,
                 stageTitle = selectedTake != null ? selectedTake.DisplayName : StudioL10n.StageTitleFallback,
                 stageSummary = selectedClip != null ? StudioL10n.ClipSummary(selectedClip.Duration, selectedClip.FrameCount) : StudioL10n.StageNoClip,
                 stageModeLabel = avatarView != null && avatarView.IsAvailable ? StudioL10n.AvatarLabel : StudioL10n.SkeletonLabel,
@@ -269,6 +308,18 @@ namespace Odoro
         {
             interactor.SetPlaybackActive(false);
             screen = StudioScreen.Capture;
+            RefreshUi();
+        }
+
+        private void ShowSettings()
+        {
+            if (interactor.State.isRecording)
+            {
+                return;
+            }
+
+            interactor.SetPlaybackActive(false);
+            screen = StudioScreen.RecordingSettings;
             RefreshUi();
         }
 
@@ -317,6 +368,8 @@ namespace Odoro
 
         private void StartRecording()
         {
+            capturePreviewSkeletonFrameCounter = 0;
+            capturePreviewSkeletonFrameReady = true;
             motionSource.Activate(MotionSourceActivity.Recording);
             interactor.UpdateMaximumCaptureDuration(recordingContext.FixedCaptureDuration);
             interactor.BeginRecording();
@@ -327,7 +380,20 @@ namespace Odoro
         private void StopRecording()
         {
             interactor.StopRecording();
+            capturePreviewSkeletonFrameCounter = 0;
+            capturePreviewSkeletonFrameReady = true;
             motionSource.Activate(MotionSourceActivity.Preview);
+            RefreshUi();
+        }
+
+        private void ToggleCaptureSkeleton()
+        {
+            captureSkeletonVisible = !captureSkeletonVisible;
+            if (!captureSkeletonVisible)
+            {
+                skeletonView.SetFrame(null, Palette.CaptureSkeleton);
+            }
+
             RefreshUi();
         }
 
@@ -405,7 +471,7 @@ namespace Odoro
         {
             if (interactor.State.isRecording)
             {
-                return StudioL10n.RecordingProgress(interactor.State.recordingDuration, recordingContext.FixedCaptureDuration);
+                return StudioL10n.RecordingBeatProgress(CurrentRecordingBeat(), TotalRecordingBeats());
             }
 
             return StudioL10n.CaptureBeatSummary(recordingContext.targetBarCount, Mathf.RoundToInt(recordingContext.bpm));
@@ -414,6 +480,78 @@ namespace Odoro
         private string CaptureModeLabel()
         {
             return StudioL10n.CaptureModeTitle(motionSource.CaptureMode);
+        }
+
+        private string CaptureMetricsLabel()
+        {
+            return StudioL10n.CaptureMetrics(liveMotionFps, Screen.width, Screen.height);
+        }
+
+        private string CaptureTrackingSignalLabel()
+        {
+            var age = lastMotionFrameReceivedAt < 0f ? float.PositiveInfinity : Time.unscaledTime - lastMotionFrameReceivedAt;
+            if (age <= TrackingSignalFreshnessSeconds)
+            {
+                return StudioL10n.TrackingGood;
+            }
+
+            return StudioL10n.TrackingSearching;
+        }
+
+        private Color CaptureTrackingSignalColor()
+        {
+            var age = lastMotionFrameReceivedAt < 0f ? float.PositiveInfinity : Time.unscaledTime - lastMotionFrameReceivedAt;
+            return age <= TrackingSignalFreshnessSeconds
+                ? new Color(0.18f, 0.82f, 0.43f)
+                : new Color(0.96f, 0.72f, 0.22f);
+        }
+
+        private float CaptureProgressValue()
+        {
+            var duration = recordingContext.FixedCaptureDuration;
+            if (duration <= 0f)
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp01(interactor.State.recordingDuration / duration);
+        }
+
+        private int TotalRecordingBeats()
+        {
+            return Mathf.Max(1, recordingContext.targetBarCount * recordingContext.timeSignatureNumerator);
+        }
+
+        private int CurrentRecordingBeat()
+        {
+            if (!interactor.State.isRecording)
+            {
+                return 0;
+            }
+
+            var rawBeat = Mathf.FloorToInt(interactor.State.recordingDuration * recordingContext.bpm / 60f);
+            return Mathf.Clamp(rawBeat, 0, TotalRecordingBeats());
+        }
+
+        private void UpdateCaptureSkeletonPreview()
+        {
+            if (!captureSkeletonVisible)
+            {
+                skeletonView.SetFrame(null, Palette.CaptureSkeleton);
+                return;
+            }
+
+            if (interactor.State.isRecording)
+            {
+                skeletonView.SetFrame(latestPreviewFrame, Palette.CaptureSkeleton);
+                return;
+            }
+
+            if (capturePreviewSkeletonFrameReady)
+            {
+                skeletonView.SetFrame(latestPreviewFrame, Palette.CaptureSkeleton);
+                capturePreviewSkeletonFrameReady = false;
+            }
         }
 
         private void UpdateCameraViewport()

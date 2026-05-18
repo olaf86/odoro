@@ -49,7 +49,7 @@ namespace Odoro
             RenderLibrary(snapshot.clips ?? Array.Empty<MotionTakeSummary>());
         }
 
-        public void RefreshLocalizedChrome()
+        public void RefreshLocalizedText()
         {
             backButton.label.text = StudioL10n.ButtonBack;
             titleLabel.text = StudioL10n.LibraryTitle;

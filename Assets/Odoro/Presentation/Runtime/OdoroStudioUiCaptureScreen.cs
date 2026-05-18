@@ -100,7 +100,7 @@ namespace Odoro
             stopButton.button.SetEnabled(snapshot.isRecording);
         }
 
-        public void RefreshLocalizedChrome()
+        public void RefreshLocalizedText()
         {
             libraryButton.label.text = StudioL10n.ButtonLibrary;
             stageButton.label.text = StudioL10n.ButtonStage;

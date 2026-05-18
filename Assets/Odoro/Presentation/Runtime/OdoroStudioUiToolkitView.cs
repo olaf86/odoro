@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -18,6 +19,7 @@ namespace Odoro
         private readonly RecordingSettingsScreenView settingsScreen;
         private readonly StageScreenView stageScreen;
         private readonly LibraryScreenView libraryScreen;
+        private readonly OdoroScreenTransitionController transitionController;
         private readonly StudioToastView toastView;
 
         public OdoroStudioUiToolkitView(GameObject host, OdoroStudioUiActions actions)
@@ -61,12 +63,19 @@ namespace Odoro
             settingsScreen = new RecordingSettingsScreenView(contentColumn, actions);
             stageScreen = new StageScreenView(contentColumn, actions);
             libraryScreen = new LibraryScreenView(contentColumn, actions);
+            transitionController = new OdoroScreenTransitionController(safeAreaRoot, new Dictionary<StudioScreen, VisualElement>
+            {
+                [StudioScreen.Capture] = captureScreen.Root,
+                [StudioScreen.RecordingSettings] = settingsScreen.Root,
+                [StudioScreen.Stage] = stageScreen.Root,
+                [StudioScreen.ClipsLibrary] = libraryScreen.Root,
+            });
             toastView = new StudioToastView(safeAreaRoot);
         }
 
         public void Render(OdoroStudioUiSnapshot snapshot)
         {
-            SetActiveScreen(snapshot.screen);
+            transitionController.Show(snapshot.screen);
 
             if (snapshot.capture != null)
             {
@@ -88,7 +97,7 @@ namespace Odoro
                 libraryScreen.Render(snapshot.library);
             }
 
-            RefreshLocalizedChrome(snapshot.stage?.isPlaying ?? false);
+            RefreshLocalizedText(snapshot.stage?.isPlaying ?? false);
             toastView.Render(snapshot.transientMessage);
         }
 
@@ -125,20 +134,12 @@ namespace Odoro
             }
         }
 
-        private void SetActiveScreen(StudioScreen screen)
+        private void RefreshLocalizedText(bool stagePlaybackActive)
         {
-            captureScreen.Root.style.display = screen == StudioScreen.Capture ? DisplayStyle.Flex : DisplayStyle.None;
-            settingsScreen.Root.style.display = screen == StudioScreen.RecordingSettings ? DisplayStyle.Flex : DisplayStyle.None;
-            stageScreen.Root.style.display = screen == StudioScreen.Stage ? DisplayStyle.Flex : DisplayStyle.None;
-            libraryScreen.Root.style.display = screen == StudioScreen.ClipsLibrary ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        private void RefreshLocalizedChrome(bool stagePlaybackActive)
-        {
-            captureScreen.RefreshLocalizedChrome();
-            settingsScreen.RefreshLocalizedChrome();
-            stageScreen.RefreshLocalizedChrome(stagePlaybackActive);
-            libraryScreen.RefreshLocalizedChrome();
+            captureScreen.RefreshLocalizedText();
+            settingsScreen.RefreshLocalizedText();
+            stageScreen.RefreshLocalizedText(stagePlaybackActive);
+            libraryScreen.RefreshLocalizedText();
         }
     }
 }

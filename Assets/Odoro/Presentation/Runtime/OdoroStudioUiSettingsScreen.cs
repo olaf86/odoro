@@ -64,7 +64,7 @@ namespace Odoro
                 : StudioL10n.ButtonSkeletonOn;
         }
 
-        public void RefreshLocalizedChrome()
+        public void RefreshLocalizedText()
         {
             sessionTitleLabel.text = StudioL10n.RecordingSessionTitle;
             bpmStepper.titleLabel.text = StudioL10n.SessionBpmTitle;

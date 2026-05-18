@@ -43,7 +43,7 @@ namespace Odoro
             playbackButton.button.SetEnabled(snapshot.hasSelectedClip);
         }
 
-        public void RefreshLocalizedChrome(bool isPlaying)
+        public void RefreshLocalizedText(bool isPlaying)
         {
             backButton.label.text = StudioL10n.ButtonBack;
             modelButton.label.text = StudioL10n.ButtonModel;

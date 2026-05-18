@@ -4,14 +4,71 @@ using UnityEngine.UIElements;
 
 namespace Odoro
 {
+    public readonly struct OdoroScreenTransitionProfile
+    {
+        public readonly float durationSeconds;
+        public readonly float incomingSlidePixels;
+        public readonly float outgoingSlidePixels;
+        public readonly float veilPeakOpacity;
+        public readonly int frameIntervalMilliseconds;
+        public readonly Color veilColor;
+
+        public OdoroScreenTransitionProfile(
+            float durationSeconds,
+            float incomingSlidePixels,
+            float outgoingSlidePixels,
+            float veilPeakOpacity,
+            int frameIntervalMilliseconds,
+            Color veilColor
+        )
+        {
+            this.durationSeconds = Mathf.Max(0.01f, durationSeconds);
+            this.incomingSlidePixels = Mathf.Max(0f, incomingSlidePixels);
+            this.outgoingSlidePixels = Mathf.Max(0f, outgoingSlidePixels);
+            this.veilPeakOpacity = Mathf.Clamp01(veilPeakOpacity);
+            this.frameIntervalMilliseconds = Mathf.Max(1, frameIntervalMilliseconds);
+            this.veilColor = veilColor;
+        }
+
+        public static OdoroScreenTransitionProfile Default => new OdoroScreenTransitionProfile(
+            durationSeconds: 0.22f,
+            incomingSlidePixels: 18f,
+            outgoingSlidePixels: 8f,
+            veilPeakOpacity: 0.22f,
+            frameIntervalMilliseconds: 16,
+            veilColor: Color.black
+        );
+
+        public OdoroScreenTransitionProfile WithDuration(float nextDurationSeconds)
+        {
+            return new OdoroScreenTransitionProfile(
+                nextDurationSeconds,
+                incomingSlidePixels,
+                outgoingSlidePixels,
+                veilPeakOpacity,
+                frameIntervalMilliseconds,
+                veilColor
+            );
+        }
+
+        public OdoroScreenTransitionProfile WithVeilPeakOpacity(float nextVeilPeakOpacity)
+        {
+            return new OdoroScreenTransitionProfile(
+                durationSeconds,
+                incomingSlidePixels,
+                outgoingSlidePixels,
+                nextVeilPeakOpacity,
+                frameIntervalMilliseconds,
+                veilColor
+            );
+        }
+    }
+
     public sealed class OdoroScreenTransitionController
     {
-        private const float TransitionDurationSeconds = 0.22f;
-        private const float SlideDistancePixels = 18f;
-        private const float VeilPeakOpacity = 0.22f;
-
         private readonly Dictionary<StudioScreen, VisualElement> screens;
         private readonly VisualElement veil;
+        private readonly OdoroScreenTransitionProfile profile;
 
         private StudioScreen activeScreen;
         private bool hasActiveScreen;
@@ -20,19 +77,22 @@ namespace Odoro
 
         public OdoroScreenTransitionController(
             VisualElement parent,
-            Dictionary<StudioScreen, VisualElement> screens
+            Dictionary<StudioScreen, VisualElement> screens,
+            OdoroScreenTransitionProfile profile
         )
         {
             this.screens = screens;
+            this.profile = profile;
 
             veil = new VisualElement { name = "odoro-screen-transition-veil" };
+            veil.AddToClassList("odoro-screen-transition-veil");
             veil.pickingMode = PickingMode.Ignore;
             veil.style.position = Position.Absolute;
             veil.style.left = 0f;
             veil.style.right = 0f;
             veil.style.top = 0f;
             veil.style.bottom = 0f;
-            veil.style.backgroundColor = Color.black;
+            veil.style.backgroundColor = profile.veilColor;
             veil.style.opacity = 0f;
             veil.style.display = DisplayStyle.None;
             parent.Add(veil);
@@ -93,6 +153,7 @@ namespace Odoro
             var version = ++transitionVersion;
             var startedAt = Time.unscaledTime;
             var slideDirection = SlideDirection(outgoingScreen, incomingScreen);
+            var routeProfile = ProfileForRoute(incomingScreen);
 
             foreach (var screen in screens.Values)
             {
@@ -104,7 +165,7 @@ namespace Odoro
 
             incoming.style.display = DisplayStyle.Flex;
             incoming.style.opacity = 0f;
-            incoming.style.translate = TranslatePixels(SlideDistancePixels * slideDirection);
+            incoming.style.translate = TranslatePixels(routeProfile.incomingSlidePixels * slideDirection);
             outgoing.style.display = DisplayStyle.Flex;
             outgoing.style.opacity = 1f;
             outgoing.style.translate = TranslatePixels(0f);
@@ -122,16 +183,16 @@ namespace Odoro
                 }
 
                 var elapsed = Time.unscaledTime - startedAt;
-                var progress = Mathf.Clamp01(elapsed / TransitionDurationSeconds);
+                var progress = Mathf.Clamp01(elapsed / routeProfile.durationSeconds);
                 var eased = EaseOutCubic(progress);
                 var outgoingOpacity = 1f - eased;
                 var incomingOpacity = eased;
-                var veilOpacity = Mathf.Sin(progress * Mathf.PI) * VeilPeakOpacity;
+                var veilOpacity = Mathf.Sin(progress * Mathf.PI) * routeProfile.veilPeakOpacity;
 
                 incoming.style.opacity = incomingOpacity;
-                incoming.style.translate = TranslatePixels(SlideDistancePixels * (1f - eased) * slideDirection);
+                incoming.style.translate = TranslatePixels(routeProfile.incomingSlidePixels * (1f - eased) * slideDirection);
                 outgoing.style.opacity = outgoingOpacity;
-                outgoing.style.translate = TranslatePixels(-SlideDistancePixels * 0.45f * eased * slideDirection);
+                outgoing.style.translate = TranslatePixels(-routeProfile.outgoingSlidePixels * eased * slideDirection);
                 veil.style.opacity = veilOpacity;
 
                 if (progress >= 1f)
@@ -139,8 +200,23 @@ namespace Odoro
                     CompleteTransition(outgoing, incoming);
                     transitionItem?.Pause();
                 }
-            }).Every(16);
+            }).Every(routeProfile.frameIntervalMilliseconds);
             activeTransition = transitionItem;
+        }
+
+        private OdoroScreenTransitionProfile ProfileForRoute(StudioScreen incomingScreen)
+        {
+            if (incomingScreen == StudioScreen.Capture)
+            {
+                return profile.WithDuration(0.16f).WithVeilPeakOpacity(0.14f);
+            }
+
+            if (incomingScreen == StudioScreen.Stage)
+            {
+                return profile.WithDuration(0.26f).WithVeilPeakOpacity(0.24f);
+            }
+
+            return profile;
         }
 
         private void CompleteTransition(VisualElement outgoing, VisualElement incoming)

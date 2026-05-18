@@ -69,7 +69,7 @@ namespace Odoro
                 [StudioScreen.RecordingSettings] = settingsScreen.Root,
                 [StudioScreen.Stage] = stageScreen.Root,
                 [StudioScreen.ClipsLibrary] = libraryScreen.Root,
-            });
+            }, OdoroScreenTransitionProfile.Default);
             toastView = new StudioToastView(safeAreaRoot);
         }
 

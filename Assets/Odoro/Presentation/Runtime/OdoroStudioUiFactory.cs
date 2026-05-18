@@ -23,6 +23,8 @@ namespace Odoro
         public static VisualElement CreateScreen(string name)
         {
             var screen = new VisualElement { name = name };
+            screen.AddToClassList("odoro-screen");
+            screen.AddToClassList(name);
             screen.style.flexGrow = 1f;
             screen.style.flexDirection = FlexDirection.Column;
             return screen;

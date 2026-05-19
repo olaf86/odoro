@@ -12,6 +12,7 @@ namespace Odoro
 
         private readonly UIDocument document;
         private readonly PanelSettings panelSettings;
+        private readonly ThemeStyleSheet fallbackThemeStyleSheet;
         private readonly VisualElement root;
         private readonly VisualElement safeAreaRoot;
         private readonly VisualElement contentColumn;
@@ -32,6 +33,7 @@ namespace Odoro
             panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             panelSettings.match = 0.5f;
             panelSettings.sortingOrder = 100;
+            panelSettings.themeStyleSheet = ResolveRuntimeThemeStyleSheet(out fallbackThemeStyleSheet);
             document.panelSettings = panelSettings;
             document.sortingOrder = 100;
 
@@ -132,6 +134,11 @@ namespace Odoro
             {
                 UnityEngine.Object.Destroy(panelSettings);
             }
+
+            if (fallbackThemeStyleSheet != null)
+            {
+                UnityEngine.Object.Destroy(fallbackThemeStyleSheet);
+            }
         }
 
         private void RefreshLocalizedText(bool stagePlaybackActive)
@@ -140,6 +147,37 @@ namespace Odoro
             settingsScreen.RefreshLocalizedText();
             stageScreen.RefreshLocalizedText(stagePlaybackActive);
             libraryScreen.RefreshLocalizedText();
+        }
+
+        private static ThemeStyleSheet ResolveRuntimeThemeStyleSheet(out ThemeStyleSheet fallbackTheme)
+        {
+            fallbackTheme = null;
+
+#if UNITY_EDITOR
+            var packageTheme = UnityEditor.AssetDatabase.LoadAssetAtPath<ThemeStyleSheet>(
+                "Packages/com.unity.dt.app-ui/PackageResources/Styles/Themes/App UI.tss"
+            );
+            if (packageTheme != null)
+            {
+                return packageTheme;
+            }
+#endif
+
+            var resourceTheme = Resources.Load<ThemeStyleSheet>("Themes/App UI");
+            if (resourceTheme != null)
+            {
+                return resourceTheme;
+            }
+
+            var loadedThemes = Resources.FindObjectsOfTypeAll<ThemeStyleSheet>();
+            if (loadedThemes.Length > 0)
+            {
+                return loadedThemes[0];
+            }
+
+            fallbackTheme = ScriptableObject.CreateInstance<ThemeStyleSheet>();
+            fallbackTheme.name = "Odoro Runtime Fallback Theme";
+            return fallbackTheme;
         }
     }
 }

@@ -38,7 +38,7 @@ namespace Odoro
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
         {
-            if (UnityEngine.Object.FindFirstObjectByType<OdoroStudioRuntime>() != null)
+            if (UnityEngine.Object.FindAnyObjectByType<OdoroStudioRuntime>() != null)
             {
                 return;
             }

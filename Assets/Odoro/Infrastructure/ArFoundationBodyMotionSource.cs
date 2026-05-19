@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.XR;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
 
@@ -38,7 +40,7 @@ namespace Odoro
         private ARHumanBodyManager humanBodyManager;
         private ARCameraManager arCameraManager;
         private ARCameraBackground arCameraBackground;
-        private ARPoseDriver arPoseDriver;
+        private TrackedPoseDriver trackedPoseDriver;
         private Camera arCamera;
         private MotionSourceActivity currentActivity;
         private Coroutine availabilityRoutine;
@@ -57,7 +59,7 @@ namespace Odoro
             ARSession.stateChanged += HandleSessionStateChanged;
             if (humanBodyManager != null)
             {
-                humanBodyManager.humanBodiesChanged += HandleHumanBodiesChanged;
+                humanBodyManager.trackablesChanged.AddListener(HandleHumanBodiesChanged);
             }
         }
 
@@ -66,7 +68,7 @@ namespace Odoro
             ARSession.stateChanged -= HandleSessionStateChanged;
             if (humanBodyManager != null)
             {
-                humanBodyManager.humanBodiesChanged -= HandleHumanBodiesChanged;
+                humanBodyManager.trackablesChanged.RemoveListener(HandleHumanBodiesChanged);
             }
         }
 
@@ -90,7 +92,7 @@ namespace Odoro
             humanBodyManager.enabled = false;
             arCameraManager.enabled = false;
             arCameraBackground.enabled = false;
-            arPoseDriver.enabled = false;
+            trackedPoseDriver.enabled = false;
 
             if (availabilityRoutine != null)
             {
@@ -127,9 +129,9 @@ namespace Odoro
                 arCameraManager.enabled = false;
             }
 
-            if (arPoseDriver != null)
+            if (trackedPoseDriver != null)
             {
-                arPoseDriver.enabled = false;
+                trackedPoseDriver.enabled = false;
             }
 
             if (arSession != null)
@@ -197,7 +199,7 @@ namespace Odoro
 
             arCameraManager.enabled = true;
             arCameraBackground.enabled = true;
-            arPoseDriver.enabled = true;
+            trackedPoseDriver.enabled = true;
             humanBodyManager.enabled = true;
 
             if (!arCameraManager.permissionGranted)
@@ -245,8 +247,9 @@ namespace Odoro
             arCameraManager.enabled = false;
             arCameraBackground = arCameraObject.AddComponent<ARCameraBackground>();
             arCameraBackground.enabled = false;
-            arPoseDriver = arCameraObject.AddComponent<ARPoseDriver>();
-            arPoseDriver.enabled = false;
+            trackedPoseDriver = arCameraObject.AddComponent<TrackedPoseDriver>();
+            ConfigureTrackedPoseDriver(trackedPoseDriver);
+            trackedPoseDriver.enabled = false;
 
             xrOrigin.Camera = arCamera;
             xrOriginObject.SetActive(false);
@@ -267,7 +270,7 @@ namespace Odoro
             }
         }
 
-        private void HandleHumanBodiesChanged(ARHumanBodiesChangedEventArgs eventArgs)
+        private void HandleHumanBodiesChanged(ARTrackablesChangedEventArgs<ARHumanBody> eventArgs)
         {
             var body = FirstTrackedBody(eventArgs);
             if (body == null)
@@ -316,7 +319,7 @@ namespace Odoro
             };
         }
 
-        private static ARHumanBody FirstTrackedBody(ARHumanBodiesChangedEventArgs eventArgs)
+        private static ARHumanBody FirstTrackedBody(ARTrackablesChangedEventArgs<ARHumanBody> eventArgs)
         {
             for (var i = 0; i < eventArgs.updated.Count; i += 1)
             {
@@ -335,6 +338,28 @@ namespace Odoro
             }
 
             return null;
+        }
+
+        private static void ConfigureTrackedPoseDriver(TrackedPoseDriver poseDriver)
+        {
+            poseDriver.trackingType = TrackedPoseDriver.TrackingType.RotationAndPosition;
+            poseDriver.updateType = TrackedPoseDriver.UpdateType.UpdateAndBeforeRender;
+            poseDriver.ignoreTrackingState = false;
+
+            var positionAction = new InputAction("AR Camera Position", expectedControlType: "Vector3");
+            positionAction.AddBinding("<XRHMD>/centerEyePosition");
+            positionAction.AddBinding("<TrackedDevice>/devicePosition");
+            poseDriver.positionInput = new InputActionProperty(positionAction);
+
+            var rotationAction = new InputAction("AR Camera Rotation", expectedControlType: "Quaternion");
+            rotationAction.AddBinding("<XRHMD>/centerEyeRotation");
+            rotationAction.AddBinding("<TrackedDevice>/deviceRotation");
+            poseDriver.rotationInput = new InputActionProperty(rotationAction);
+
+            var trackingStateAction = new InputAction("AR Camera Tracking State", expectedControlType: "Integer");
+            trackingStateAction.AddBinding("<XRHMD>/trackingState");
+            trackingStateAction.AddBinding("<TrackedDevice>/trackingState");
+            poseDriver.trackingStateInput = new InputActionProperty(trackingStateAction);
         }
 
         private static MotionFrame MakeFrame(ARHumanBody body)

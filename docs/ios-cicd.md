@@ -37,6 +37,8 @@ Before publishing can succeed, create the `xcode-cloud/ios` branch once. After t
 
 The publish step retries Git pushes because the generated Xcode project can be large enough for transient GitHub HTTP timeouts. If the first push returns an error after the remote branch was actually updated, the workflow verifies the remote SHA and treats that as success.
 
+Generated iOS projects can include Unity binaries larger than GitHub's normal Git file limit. The publish step automatically tracks files larger than 95 MB with Git LFS on the `xcode-cloud/ios` branch.
+
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
 ## Local batchmode smoke test

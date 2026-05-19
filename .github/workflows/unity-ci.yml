@@ -128,6 +128,7 @@ jobs:
           fi
 
           git checkout "${XCODE_CLOUD_BRANCH}"
+          git lfs install --local
           git rm -r --ignore-unmatch .
 
           cp -R "${GITHUB_WORKSPACE}/Builds/iOS/." "${publish_dir}/"
@@ -143,6 +144,10 @@ jobs:
           source_sha=${GITHUB_SHA}
           workflow_run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
+
+          while IFS= read -r -d '' large_file; do
+            git lfs track --filename "${large_file#./}"
+          done < <(find . -type f -size +95M ! -path './.git/*' -print0)
 
           git add .
           if git diff --cached --quiet; then

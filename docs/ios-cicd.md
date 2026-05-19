@@ -35,6 +35,8 @@ Current workflow behavior:
 
 Before publishing can succeed, create the `xcode-cloud/ios` branch once. After that, GitHub Actions owns the branch contents and replaces them with each generated Xcode project.
 
+The publish step retries Git pushes because the generated Xcode project can be large enough for transient GitHub HTTP timeouts. If the first push returns an error after the remote branch was actually updated, the workflow verifies the remote SHA and treats that as success.
+
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
 ## Local batchmode smoke test

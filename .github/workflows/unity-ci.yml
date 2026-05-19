@@ -153,4 +153,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Update generated iOS Xcode project from ${GITHUB_SHA::7}"
-          git push origin "${XCODE_CLOUD_BRANCH}"
+
+          local_sha="$(git rev-parse HEAD)"
+          for attempt in 1 2 3; do
+            if git \
+              -c http.version=HTTP/1.1 \
+              -c http.lowSpeedLimit=0 \
+              -c http.lowSpeedTime=999999 \
+              push origin "HEAD:${XCODE_CLOUD_BRANCH}"; then
+              exit 0
+            fi
+
+            remote_sha="$(git ls-remote origin "refs/heads/${XCODE_CLOUD_BRANCH}" | awk '{print $1}')"
+            if [ "${remote_sha}" = "${local_sha}" ]; then
+              echo "Remote branch ${XCODE_CLOUD_BRANCH} already points at ${local_sha}; treating push as successful."
+              exit 0
+            fi
+
+            echo "Push attempt ${attempt} failed; retrying..."
+            sleep $((attempt * 15))
+          done
+
+          echo "Failed to publish ${local_sha} to ${XCODE_CLOUD_BRANCH} after 3 attempts."
+          exit 1

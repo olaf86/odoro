@@ -122,14 +122,13 @@ jobs:
           git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${publish_dir}"
           cd "${publish_dir}"
 
-          if git ls-remote --exit-code --heads origin "${XCODE_CLOUD_BRANCH}"; then
-            git checkout "${XCODE_CLOUD_BRANCH}"
-            git rm -r --ignore-unmatch .
-          else
-            git checkout --orphan "${XCODE_CLOUD_BRANCH}"
-            git rm -r --cached --ignore-unmatch .
-            find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          if ! git ls-remote --exit-code --heads origin "${XCODE_CLOUD_BRANCH}"; then
+            echo "Branch ${XCODE_CLOUD_BRANCH} does not exist. Create it once before publishing Xcode Cloud builds."
+            exit 1
           fi
+
+          git checkout "${XCODE_CLOUD_BRANCH}"
+          git rm -r --ignore-unmatch .
 
           cp -R "${GITHUB_WORKSPACE}/Builds/iOS/." "${publish_dir}/"
           cat > .gitignore <<'EOF'

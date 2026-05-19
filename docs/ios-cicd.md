@@ -33,6 +33,8 @@ Current workflow behavior:
 - Manual run: run EditMode tests, then optionally build the iOS Xcode project artifact.
 - Manual run on `main` with `build_ios: true`: publish the generated Xcode project to `xcode-cloud/ios`.
 
+Before publishing can succeed, create the `xcode-cloud/ios` branch once. After that, GitHub Actions owns the branch contents and replaces them with each generated Xcode project.
+
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
 ## Local batchmode smoke test

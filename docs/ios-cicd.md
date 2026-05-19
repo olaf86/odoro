@@ -31,6 +31,7 @@ Current workflow behavior:
 - `pull_request` to `main`: run EditMode tests.
 - `push` to `main`: run EditMode tests.
 - Manual run: run EditMode tests, then optionally build the iOS Xcode project artifact.
+- Manual run on `main` with `build_ios: true`: publish the generated Xcode project to `xcode-cloud/ios`.
 
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
@@ -61,6 +62,8 @@ Recommended options, in order:
 
 2. **GitHub Actions plus Xcode Cloud bridge branch**
    Let GitHub Actions generate the Unity iOS Xcode project and publish it to a dedicated branch or repository such as `xcode-cloud/ios`. Configure Xcode Cloud against that generated Xcode source. This preserves Xcode Cloud's signing/TestFlight workflow without committing generated iOS output to `main`.
+
+   The current workflow uses `xcode-cloud/ios` as the bridge branch. It is intentionally not named `release/*` because it contains generated Xcode project output, not hand-maintained release source. Keep the branch rules light at first, but avoid manual edits on the branch; let GitHub Actions own its contents.
 
 3. **Xcode Cloud generates the Unity project**
    Avoid this unless there is a strong reason. Xcode Cloud build machines are optimized for Xcode projects, and installing/running Unity inside Xcode Cloud custom scripts tends to be slower and more fragile.

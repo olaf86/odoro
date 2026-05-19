@@ -26,6 +26,7 @@ permissions:
 
 env:
   UNITY_VERSION: 6000.4.6f1
+  XCODE_CLOUD_BRANCH: xcode-cloud/ios
 
 jobs:
   editmode-tests:
@@ -73,6 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: editmode-tests
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.build_ios }}
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -107,3 +110,47 @@ jobs:
           name: odoro-ios-xcode-project
           path: Builds/iOS
           if-no-files-found: error
+
+      - name: Publish Xcode project for Xcode Cloud
+        if: ${{ github.ref_name == 'main' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          publish_dir="$(mktemp -d)"
+          git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${publish_dir}"
+          cd "${publish_dir}"
+
+          if git ls-remote --exit-code --heads origin "${XCODE_CLOUD_BRANCH}"; then
+            git checkout "${XCODE_CLOUD_BRANCH}"
+            git rm -r --ignore-unmatch .
+          else
+            git checkout --orphan "${XCODE_CLOUD_BRANCH}"
+            git rm -r --ignore-unmatch .
+          fi
+
+          cp -R "${GITHUB_WORKSPACE}/Builds/iOS/." "${publish_dir}/"
+          cat > .gitignore <<'EOF'
+          DerivedData/
+          build/
+          xcuserdata/
+          *.xcuserstate
+          EOF
+          cat > ODORO_UNITY_SOURCE.txt <<EOF
+          repository=${GITHUB_REPOSITORY}
+          source_branch=${GITHUB_REF_NAME}
+          source_sha=${GITHUB_SHA}
+          workflow_run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+
+          git add .
+          if git diff --cached --quiet; then
+            echo "No generated Xcode project changes to publish."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update generated iOS Xcode project from ${GITHUB_SHA::7}"
+          git push origin "${XCODE_CLOUD_BRANCH}"

@@ -29,7 +29,7 @@ Required repository secrets:
 Current workflow behavior:
 
 - `pull_request` to `main`: run EditMode tests.
-- `push` to `main`: run EditMode tests.
+- `push` to `main`: run EditMode tests, build the iOS Xcode project, and publish it to `xcode-cloud/ios`.
 - Manual run: run EditMode tests, then optionally build the iOS Xcode project artifact.
 - Manual run on `main` with `build_ios: true`: publish the generated Xcode project to `xcode-cloud/ios`.
 

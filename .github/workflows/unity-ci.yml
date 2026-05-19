@@ -127,7 +127,8 @@ jobs:
             git rm -r --ignore-unmatch .
           else
             git checkout --orphan "${XCODE_CLOUD_BRANCH}"
-            git rm -r --ignore-unmatch .
+            git rm -r --cached --ignore-unmatch .
+            find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           fi
 
           cp -R "${GITHUB_WORKSPACE}/Builds/iOS/." "${publish_dir}/"

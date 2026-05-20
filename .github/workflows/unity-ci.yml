@@ -26,7 +26,8 @@ permissions:
 
 env:
   UNITY_VERSION: 6000.4.6f1
-  XCODE_CLOUD_BRANCH: xcode-cloud/ios
+  XCODE_CLOUD_REPOSITORY: olaf86/odoro-ios-xcode
+  XCODE_CLOUD_BRANCH: main
 
 jobs:
   editmode-tests:
@@ -114,16 +115,21 @@ jobs:
       - name: Publish Xcode project for Xcode Cloud
         if: ${{ github.ref_name == 'main' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XCODE_CLOUD_PUBLISH_TOKEN: ${{ secrets.XCODE_CLOUD_PUBLISH_TOKEN }}
         run: |
           set -euo pipefail
 
+          if [ -z "${XCODE_CLOUD_PUBLISH_TOKEN}" ]; then
+            echo "XCODE_CLOUD_PUBLISH_TOKEN secret is required to publish to ${XCODE_CLOUD_REPOSITORY}."
+            exit 1
+          fi
+
           publish_dir="$(mktemp -d)"
-          git clone --no-checkout "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "${publish_dir}"
+          git clone --no-checkout "https://x-access-token:${XCODE_CLOUD_PUBLISH_TOKEN}@github.com/${XCODE_CLOUD_REPOSITORY}.git" "${publish_dir}"
           cd "${publish_dir}"
 
           if ! git ls-remote --exit-code --heads origin "${XCODE_CLOUD_BRANCH}"; then
-            echo "Branch ${XCODE_CLOUD_BRANCH} does not exist. Create it once before publishing Xcode Cloud builds."
+            echo "Branch ${XCODE_CLOUD_BRANCH} does not exist in ${XCODE_CLOUD_REPOSITORY}. Create the private repository and branch once before publishing Xcode Cloud builds."
             exit 1
           fi
 

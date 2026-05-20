@@ -25,19 +25,20 @@ Required repository secrets:
 - `UNITY_LICENSE`: Unity license content used by GameCI.
 - `UNITY_EMAIL`: Unity account email, if your license activation path requires it.
 - `UNITY_PASSWORD`: Unity account password, if your license activation path requires it.
+- `XCODE_CLOUD_PUBLISH_TOKEN`: fine-grained GitHub token with Contents read/write access to the private `olaf86/odoro-ios-xcode` repository.
 
 Current workflow behavior:
 
 - `pull_request` to `main`: run EditMode tests.
-- `push` to `main`: run EditMode tests, build the iOS Xcode project, and publish it to `xcode-cloud/ios`.
+- `push` to `main`: run EditMode tests, build the iOS Xcode project, and publish it to the private `olaf86/odoro-ios-xcode` repository.
 - Manual run: run EditMode tests, then optionally build the iOS Xcode project artifact.
-- Manual run on `main` with `build_ios: true`: publish the generated Xcode project to `xcode-cloud/ios`.
+- Manual run on `main` with `build_ios: true`: publish the generated Xcode project to the private `olaf86/odoro-ios-xcode` repository.
 
-Before publishing can succeed, create the `xcode-cloud/ios` branch once. After that, GitHub Actions owns the branch contents and replaces them with each generated Xcode project.
+Before publishing can succeed, create the private `olaf86/odoro-ios-xcode` repository once. After that, GitHub Actions owns the repository contents and replaces them with each generated Xcode project.
 
 The publish step retries Git pushes because the generated Xcode project can be large enough for transient GitHub HTTP timeouts. If the first push returns an error after the remote branch was actually updated, the workflow verifies the remote SHA and treats that as success.
 
-Generated iOS projects can include Unity binaries larger than GitHub's normal Git file limit. The publish step automatically tracks files larger than 95 MB with Git LFS on the `xcode-cloud/ios` branch.
+Generated iOS projects can include Unity binaries larger than GitHub's normal Git file limit. The publish step automatically tracks files larger than 95 MB with Git LFS in the private Xcode Cloud repository.
 
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
@@ -66,10 +67,10 @@ Recommended options, in order:
 1. **GitHub Actions only for iOS delivery**
    Generate the Xcode project, run `xcodebuild archive` on a macOS runner, then upload to App Store Connect. This is the most direct path once signing assets and App Store Connect API credentials are ready.
 
-2. **GitHub Actions plus Xcode Cloud bridge branch**
-   Let GitHub Actions generate the Unity iOS Xcode project and publish it to a dedicated branch or repository such as `xcode-cloud/ios`. Configure Xcode Cloud against that generated Xcode source. This preserves Xcode Cloud's signing/TestFlight workflow without committing generated iOS output to `main`.
+2. **GitHub Actions plus private Xcode Cloud repository**
+   Let GitHub Actions generate the Unity iOS Xcode project and publish it to a dedicated private repository such as `olaf86/odoro-ios-xcode`. Configure Xcode Cloud against that generated Xcode source. This preserves Xcode Cloud's signing/TestFlight workflow without committing generated iOS output to the public/main Unity repository.
 
-   The current workflow uses `xcode-cloud/ios` as the bridge branch. It is intentionally not named `release/*` because it contains generated Xcode project output, not hand-maintained release source. Keep the branch rules light at first, but avoid manual edits on the branch; let GitHub Actions own its contents.
+   The current workflow publishes to the `main` branch of `olaf86/odoro-ios-xcode`. It is intentionally a separate private repository because it contains generated Xcode project output, not hand-maintained release source. Keep the branch rules light at first, but avoid manual edits; let GitHub Actions own its contents.
 
 3. **Xcode Cloud generates the Unity project**
    Avoid this unless there is a strong reason. Xcode Cloud build machines are optimized for Xcode projects, and installing/running Unity inside Xcode Cloud custom scripts tends to be slower and more fragile.

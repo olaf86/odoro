@@ -166,6 +166,19 @@ jobs:
              </FileRef>
           </Workspace>
           EOF
+          mkdir -p Unity-iPhone.xcworkspace/xcshareddata/xcschemes
+          cat > Unity-iPhone.xcworkspace/contents.xcworkspacedata <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Workspace
+             version = "1.0">
+             <FileRef
+                location = "group:Unity-iPhone.xcodeproj">
+             </FileRef>
+          </Workspace>
+          EOF
+          if [ -f Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme ]; then
+            cp Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme Unity-iPhone.xcworkspace/xcshareddata/xcschemes/Unity-iPhone.xcscheme
+          fi
 
           while IFS= read -r -d '' large_file; do
             git lfs track --filename "${large_file#./}"

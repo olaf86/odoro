@@ -44,6 +44,8 @@ Unity can export the shared Xcode scheme with a placeholder buildable name. The 
 
 The publish step also ensures the generated `.xcodeproj` contains the standard `project.xcworkspace/contents.xcworkspacedata` metadata, because Xcode Cloud's workflow setup can fail to discover shared schemes when that project workspace metadata is absent.
 
+The private Xcode Cloud repository also includes a root `Unity-iPhone.xcworkspace` with the shared `Unity-iPhone` scheme copied into the workspace. Prefer selecting this workspace when creating Xcode Cloud workflows.
+
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
 ## Local batchmode smoke test

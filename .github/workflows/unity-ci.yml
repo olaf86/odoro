@@ -156,6 +156,16 @@ jobs:
             export ODORO_APP_BUILDABLE_NAME="${app_name}.app"
             ruby -0pi -e 'gsub(/BuildableName\s*=\s*"Unity-Target-New\.app"/, "BuildableName = \"#{ENV.fetch("ODORO_APP_BUILDABLE_NAME")}\"")' Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme
           fi
+          mkdir -p Unity-iPhone.xcodeproj/project.xcworkspace
+          cat > Unity-iPhone.xcodeproj/project.xcworkspace/contents.xcworkspacedata <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <Workspace
+             version = "1.0">
+             <FileRef
+                location = "self:">
+             </FileRef>
+          </Workspace>
+          EOF
 
           while IFS= read -r -d '' large_file; do
             git lfs track --filename "${large_file#./}"

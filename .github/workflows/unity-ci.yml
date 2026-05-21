@@ -151,6 +151,12 @@ jobs:
           workflow_run=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
           EOF
 
+          app_name="$(ruby -ne 'if /PRODUCT_NAME_APP = "?([^";]+)"?;/; puts $1; exit; end' Unity-iPhone.xcodeproj/project.pbxproj || true)"
+          if [ -n "${app_name}" ] && [ -f Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme ]; then
+            export ODORO_APP_BUILDABLE_NAME="${app_name}.app"
+            ruby -0pi -e 'gsub(/BuildableName\s*=\s*"Unity-Target-New\.app"/, "BuildableName = \"#{ENV.fetch("ODORO_APP_BUILDABLE_NAME")}\"")' Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme
+          fi
+
           while IFS= read -r -d '' large_file; do
             git lfs track --filename "${large_file#./}"
           done < <(find . -type f -size +95M ! -path './.git/*' -print0)

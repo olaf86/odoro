@@ -40,6 +40,8 @@ The publish step retries Git pushes because the generated Xcode project can be l
 
 Generated iOS projects can include Unity binaries larger than GitHub's normal Git file limit. The publish step automatically tracks files larger than 95 MB with Git LFS in the private Xcode Cloud repository.
 
+Unity can export the shared Xcode scheme with a placeholder buildable name. The publish step normalizes the `Unity-iPhone` scheme to the generated app product name before pushing to the private Xcode Cloud repository.
+
 The Unity version is pinned to `6000.4.6f1`, matching `ProjectSettings/ProjectVersion.txt`.
 
 ## Local batchmode smoke test

@@ -179,6 +179,7 @@ jobs:
           if [ -f Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme ]; then
             cp Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme Unity-iPhone.xcworkspace/xcshareddata/xcschemes/Unity-iPhone.xcscheme
           fi
+          ruby -0pi -e 'gsub(/\$\(TOOLCHAIN_DIR\)\/usr\/lib\/swift/, "$(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift")' Unity-iPhone.xcodeproj/project.pbxproj
 
           while IFS= read -r -d '' large_file; do
             git lfs track --filename "${large_file#./}"

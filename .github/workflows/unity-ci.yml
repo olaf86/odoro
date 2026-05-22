@@ -139,8 +139,8 @@ jobs:
 
           cp -R "${GITHUB_WORKSPACE}/Builds/iOS/." "${publish_dir}/"
           cat > .gitignore <<'EOF'
-          DerivedData/
-          build/
+          /DerivedData/
+          /build/
           xcuserdata/
           *.xcuserstate
           EOF

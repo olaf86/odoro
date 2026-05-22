@@ -179,6 +179,15 @@ jobs:
           if [ -f Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme ]; then
             cp Unity-iPhone.xcodeproj/xcshareddata/xcschemes/Unity-iPhone.xcscheme Unity-iPhone.xcworkspace/xcshareddata/xcschemes/Unity-iPhone.xcscheme
           fi
+          app_icon_source="${GITHUB_WORKSPACE}/Assets/Odoro/AppIcon/AppIcon1024.png"
+          app_icon_set="Unity-iPhone/Images.xcassets/AppIcon.appiconset"
+          if [ -f "${app_icon_source}" ] && [ -d "${app_icon_set}" ]; then
+            cp "${app_icon_source}" "${app_icon_set}/Icon-AppStore-1024.png"
+            ruby -rjson -e 'path = ARGV[0]; data = JSON.parse(File.read(path)); images = data["images"] ||= []; images.reject! { |image| image["idiom"] == "ios-marketing" && image["size"] == "1024x1024" && image["scale"] == "1x" }; images << { "filename" => "Icon-AppStore-1024.png", "idiom" => "ios-marketing", "scale" => "1x", "size" => "1024x1024" }; File.write(path, JSON.pretty_generate(data) + "\n")' "${app_icon_set}/Contents.json"
+          fi
+
+          # Xcode 26 can resolve $(TOOLCHAIN_DIR) to the Metal toolchain in Xcode Cloud.
+          # Unity ARKit needs Swift compatibility libraries from XcodeDefault.xctoolchain.
           ruby -0pi -e 'gsub(/\$\(TOOLCHAIN_DIR\)\/usr\/lib\/swift/, "$(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift")' Unity-iPhone.xcodeproj/project.pbxproj
 
           while IFS= read -r -d '' large_file; do

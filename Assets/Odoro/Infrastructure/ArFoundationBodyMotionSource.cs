@@ -11,6 +11,26 @@ namespace Odoro
 {
     public sealed class ArFoundationBodyMotionSource : MonoBehaviour, IMotionSource, IPrimaryCameraSource
     {
+        private const int ArKitHips = 1;
+        private const int ArKitLeftUpperLeg = 2;
+        private const int ArKitLeftLeg = 3;
+        private const int ArKitLeftFoot = 4;
+        private const int ArKitRightUpperLeg = 7;
+        private const int ArKitRightLeg = 8;
+        private const int ArKitRightFoot = 9;
+        private const int ArKitSpine1 = 12;
+        private const int ArKitSpine7 = 18;
+        private const int ArKitLeftShoulder = 19;
+        private const int ArKitLeftUpperArm = 20;
+        private const int ArKitLeftForearm = 21;
+        private const int ArKitLeftHand = 22;
+        private const int ArKitNeck1 = 47;
+        private const int ArKitHead = 51;
+        private const int ArKitRightShoulder = 63;
+        private const int ArKitRightUpperArm = 64;
+        private const int ArKitRightForearm = 65;
+        private const int ArKitRightHand = 66;
+
         public CaptureMode CaptureMode => CaptureMode.RearBody3D;
 
         public bool IsSupported
@@ -323,7 +343,7 @@ namespace Odoro
         {
             for (var i = 0; i < eventArgs.updated.Count; i += 1)
             {
-                if (eventArgs.updated[i] != null)
+                if (IsBodyUsable(eventArgs.updated[i]))
                 {
                     return eventArgs.updated[i];
                 }
@@ -331,13 +351,21 @@ namespace Odoro
 
             for (var i = 0; i < eventArgs.added.Count; i += 1)
             {
-                if (eventArgs.added[i] != null)
+                if (IsBodyUsable(eventArgs.added[i]))
                 {
                     return eventArgs.added[i];
                 }
             }
 
             return null;
+        }
+
+        private static bool IsBodyUsable(ARHumanBody body)
+        {
+            return body != null
+                && body.trackingState != TrackingState.None
+                && body.joints.IsCreated
+                && body.joints.Length > ArKitRightHand;
         }
 
         private static void ConfigureTrackedPoseDriver(TrackedPoseDriver poseDriver)
@@ -365,16 +393,62 @@ namespace Odoro
         private static MotionFrame MakeFrame(ARHumanBody body)
         {
             var joints = body.joints;
-            var positions = new Vector3[joints.Length];
-            var rotations = new MotionJointRotation[joints.Length];
+            var rawPositions = new Vector3[joints.Length];
+            var rawRotations = new Quaternion[joints.Length];
 
             for (var jointIndex = 0; jointIndex < joints.Length; jointIndex += 1)
             {
                 var joint = joints[jointIndex];
                 var worldPosition = body.transform.TransformPoint(joint.anchorPose.position);
                 var worldRotation = body.transform.rotation * joint.anchorPose.rotation;
-                positions[jointIndex] = worldPosition;
-                rotations[jointIndex] = new MotionJointRotation(worldRotation);
+                rawPositions[jointIndex] = worldPosition;
+                rawRotations[jointIndex] = worldRotation;
+            }
+
+            var positions = new Vector3[OdoroSkeletonDefinition.JointCount];
+            var rotations = new MotionJointRotation[OdoroSkeletonDefinition.JointCount];
+
+            SetJoint(OdoroJointName.Root, ArKitHips, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.Spine, ArKitSpine1, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.Chest, ArKitSpine7, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.Neck, ArKitNeck1, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.Head, ArKitHead, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftShoulder, ArKitLeftShoulder, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftUpperArm, ArKitLeftUpperArm, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftElbow, ArKitLeftForearm, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftWrist, ArKitLeftHand, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightShoulder, ArKitRightShoulder, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightUpperArm, ArKitRightUpperArm, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightElbow, ArKitRightForearm, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightWrist, ArKitRightHand, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftHip, ArKitLeftUpperLeg, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftKnee, ArKitLeftLeg, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.LeftFoot, ArKitLeftFoot, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightHip, ArKitRightUpperLeg, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightKnee, ArKitRightLeg, rawPositions, rawRotations, positions, rotations);
+            SetJoint(OdoroJointName.RightFoot, ArKitRightFoot, rawPositions, rawRotations, positions, rotations);
+
+            positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.LeftAnkle)] =
+                Vector3.Lerp(
+                    positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.LeftKnee)],
+                    positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.LeftFoot)],
+                    0.82f
+                );
+            positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.RightAnkle)] =
+                Vector3.Lerp(
+                    positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.RightKnee)],
+                    positions[OdoroSkeletonDefinition.IndexOf(OdoroJointName.RightFoot)],
+                    0.82f
+                );
+
+            if (ContainsJoint(rawRotations, ArKitLeftFoot))
+            {
+                rotations[OdoroSkeletonDefinition.IndexOf(OdoroJointName.LeftAnkle)] = new MotionJointRotation(rawRotations[ArKitLeftFoot]);
+            }
+
+            if (ContainsJoint(rawRotations, ArKitRightFoot))
+            {
+                rotations[OdoroSkeletonDefinition.IndexOf(OdoroJointName.RightAnkle)] = new MotionJointRotation(rawRotations[ArKitRightFoot]);
             }
 
             return new MotionFrame
@@ -383,6 +457,35 @@ namespace Odoro
                 jointPositions = positions,
                 jointRotations = rotations,
             };
+        }
+
+        private static void SetJoint(
+            OdoroJointName jointName,
+            int arKitIndex,
+            Vector3[] rawPositions,
+            Quaternion[] rawRotations,
+            Vector3[] positions,
+            MotionJointRotation[] rotations
+        )
+        {
+            var targetIndex = OdoroSkeletonDefinition.IndexOf(jointName);
+            if (targetIndex < 0)
+            {
+                return;
+            }
+
+            if (!ContainsJoint(rawPositions, arKitIndex))
+            {
+                return;
+            }
+
+            positions[targetIndex] = rawPositions[arKitIndex];
+            rotations[targetIndex] = new MotionJointRotation(rawRotations[arKitIndex]);
+        }
+
+        private static bool ContainsJoint(Array joints, int index)
+        {
+            return joints != null && index >= 0 && index < joints.Length;
         }
     }
 }

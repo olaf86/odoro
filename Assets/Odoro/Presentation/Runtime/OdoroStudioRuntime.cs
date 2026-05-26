@@ -42,6 +42,7 @@ namespace Odoro
         private float debugFrameCaptureFirstSourceTime = -1f;
         private string debugLastSavedPath;
         private string debugReplayPath;
+        private string debugLastShareStatus;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -643,6 +644,11 @@ namespace Odoro
                 GUILayout.Label($"Saved: {debugLastSavedPath}");
             }
 
+            if (!string.IsNullOrEmpty(debugLastShareStatus))
+            {
+                GUILayout.Label(debugLastShareStatus);
+            }
+
             GUILayout.Space(8f);
             if (debugFrameCaptureActive)
             {
@@ -655,6 +661,14 @@ namespace Odoro
             else if (GUILayout.Button("Save Next 10s MotionFrames"))
             {
                 StartDebugFrameCapture();
+            }
+
+            if (DebugFileSharer.IsAvailable && HasShareableDebugMotionFile())
+            {
+                if (GUILayout.Button("Share MotionFrames"))
+                {
+                    ShareDebugMotionFrames();
+                }
             }
 
             GUILayout.EndArea();
@@ -672,6 +686,7 @@ namespace Odoro
             debugFrameCaptureStartedAt = Time.unscaledTime;
             debugFrameCaptureFirstSourceTime = -1f;
             debugLastSavedPath = null;
+            debugLastShareStatus = null;
         }
 
         private void CaptureDebugFrame(MotionFrame frame)
@@ -715,12 +730,26 @@ namespace Odoro
                     motionSource.GetType().Name
                 );
                 debugReplayPath = MotionDebugFrameStore.DefaultReplayPath;
+                debugLastShareStatus = null;
             }
             catch (Exception exception)
             {
                 Debug.LogException(exception);
                 debugLastSavedPath = $"Save failed: {exception.Message}";
             }
+        }
+
+        private bool HasShareableDebugMotionFile()
+        {
+            return System.IO.File.Exists(MotionDebugFrameStore.DefaultReplayPath);
+        }
+
+        private void ShareDebugMotionFrames()
+        {
+            var path = MotionDebugFrameStore.DefaultReplayPath;
+            debugLastShareStatus = DebugFileSharer.ShareFile(path)
+                ? "Sharing MotionFrames..."
+                : "Share failed: no debug MotionFrames file.";
         }
 
         private float DebugFrameCaptureRemainingSeconds()

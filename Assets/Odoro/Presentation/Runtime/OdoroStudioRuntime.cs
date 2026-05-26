@@ -8,6 +8,7 @@ namespace Odoro
     {
         private const int CapturePreviewSkeletonFrameInterval = 10;
         private const float TrackingSignalFreshnessSeconds = 0.75f;
+        private const float DebugFrameCaptureDuration = 10f;
 
         private MotionArchiveStore archiveStore;
         private IMotionSource motionSource;
@@ -34,6 +35,13 @@ namespace Odoro
         private float lastMotionFrameReceivedAt = -1f;
         private float lastMotionFrameSourceTime = -1f;
         private float liveMotionFps;
+        private readonly List<MotionFrame> debugCapturedFrames = new List<MotionFrame>();
+        private bool debugHudVisible;
+        private bool debugFrameCaptureActive;
+        private float debugFrameCaptureStartedAt;
+        private float debugFrameCaptureFirstSourceTime = -1f;
+        private string debugLastSavedPath;
+        private string debugReplayPath;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -152,6 +160,13 @@ namespace Odoro
 
         private IMotionSource CreateMotionSource()
         {
+#if UNITY_EDITOR
+            if (MotionDebugFrameStore.TryReadReplay(out var replayClip, out debugReplayPath))
+            {
+                return new RecordedMotionSource(replayClip, debugReplayPath);
+            }
+#endif
+
 #if UNITY_IOS && !UNITY_EDITOR
             var arSource = gameObject.AddComponent<ArFoundationBodyMotionSource>();
             if (arSource.IsSupported)
@@ -171,6 +186,7 @@ namespace Odoro
             {
                 latestPreviewFrame = frame;
                 lastMotionFrameReceivedAt = Time.unscaledTime;
+                CaptureDebugFrame(frame);
 
                 if (lastMotionFrameSourceTime >= 0f)
                 {
@@ -578,6 +594,161 @@ namespace Odoro
             }
 
             mainCamera.rect = new Rect(0f, 0f, 1f, 1f);
+        }
+
+        private void OnGUI()
+        {
+            if (!DebugHudAvailable())
+            {
+                return;
+            }
+
+            if (!debugHudVisible)
+            {
+                if (GUI.Button(new Rect(12f, 12f, 96f, 36f), "Debug"))
+                {
+                    debugHudVisible = true;
+                }
+
+                return;
+            }
+
+            var panelWidth = Mathf.Min(390f, Screen.width - 24f);
+            GUILayout.BeginArea(new Rect(12f, 12f, panelWidth, 360f), GUI.skin.box);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Odoro Debug HUD");
+            if (GUILayout.Button("Hide", GUILayout.Width(72f)))
+            {
+                debugHudVisible = false;
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Label($"Source: {motionSource?.GetType().Name ?? "--"} ({motionSource?.CaptureMode.ToString() ?? "--"})");
+            GUILayout.Label($"Status: {interactor?.State.statusText ?? "--"}");
+            GUILayout.Label($"Motion FPS: {liveMotionFps:0.0}");
+            GUILayout.Label($"Frame age: {DebugFrameAgeLabel()}");
+            GUILayout.Label($"Joint count: {latestPreviewFrame?.jointPositions?.Length ?? 0}");
+            GUILayout.Label(DebugJointLabel(OdoroJointName.Root));
+            GUILayout.Label(DebugJointLabel(OdoroJointName.Head));
+            GUILayout.Label(DebugJointLabel(OdoroJointName.LeftWrist));
+            GUILayout.Label(DebugJointLabel(OdoroJointName.RightWrist));
+
+            if (!string.IsNullOrEmpty(debugReplayPath))
+            {
+                GUILayout.Label($"Replay: {debugReplayPath}");
+            }
+
+            if (!string.IsNullOrEmpty(debugLastSavedPath))
+            {
+                GUILayout.Label($"Saved: {debugLastSavedPath}");
+            }
+
+            GUILayout.Space(8f);
+            if (debugFrameCaptureActive)
+            {
+                GUILayout.Label($"Capturing: {debugCapturedFrames.Count} frames / {DebugFrameCaptureRemainingSeconds():0.0}s");
+                if (GUILayout.Button("Stop & Save MotionFrames"))
+                {
+                    StopDebugFrameCapture(true);
+                }
+            }
+            else if (GUILayout.Button("Save Next 10s MotionFrames"))
+            {
+                StartDebugFrameCapture();
+            }
+
+            GUILayout.EndArea();
+        }
+
+        private bool DebugHudAvailable()
+        {
+            return Application.isEditor || Debug.isDebugBuild;
+        }
+
+        private void StartDebugFrameCapture()
+        {
+            debugCapturedFrames.Clear();
+            debugFrameCaptureActive = true;
+            debugFrameCaptureStartedAt = Time.unscaledTime;
+            debugFrameCaptureFirstSourceTime = -1f;
+            debugLastSavedPath = null;
+        }
+
+        private void CaptureDebugFrame(MotionFrame frame)
+        {
+            if (!debugFrameCaptureActive || frame == null || frame.jointPositions == null)
+            {
+                return;
+            }
+
+            if (debugFrameCaptureFirstSourceTime < 0f)
+            {
+                debugFrameCaptureFirstSourceTime = frame.time;
+            }
+
+            var relativeTime = Mathf.Max(0f, frame.time - debugFrameCaptureFirstSourceTime);
+            debugCapturedFrames.Add(frame.CloneWithTime(relativeTime));
+
+            if (Time.unscaledTime - debugFrameCaptureStartedAt >= DebugFrameCaptureDuration)
+            {
+                StopDebugFrameCapture(true);
+            }
+        }
+
+        private void StopDebugFrameCapture(bool save)
+        {
+            debugFrameCaptureActive = false;
+            if (!save || debugCapturedFrames.Count < 2)
+            {
+                return;
+            }
+
+            var clip = new MotionClip();
+            clip.frames.AddRange(debugCapturedFrames);
+
+            try
+            {
+                debugLastSavedPath = MotionDebugFrameStore.WriteReplay(
+                    clip,
+                    motionSource.CaptureMode,
+                    Application.platform.ToString(),
+                    motionSource.GetType().Name
+                );
+                debugReplayPath = MotionDebugFrameStore.DefaultReplayPath;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                debugLastSavedPath = $"Save failed: {exception.Message}";
+            }
+        }
+
+        private float DebugFrameCaptureRemainingSeconds()
+        {
+            return Mathf.Max(0f, DebugFrameCaptureDuration - (Time.unscaledTime - debugFrameCaptureStartedAt));
+        }
+
+        private string DebugFrameAgeLabel()
+        {
+            if (lastMotionFrameReceivedAt < 0f)
+            {
+                return "--";
+            }
+
+            return $"{Time.unscaledTime - lastMotionFrameReceivedAt:0.00}s";
+        }
+
+        private string DebugJointLabel(OdoroJointName jointName)
+        {
+            var positions = latestPreviewFrame?.jointPositions;
+            var index = OdoroSkeletonDefinition.IndexOf(jointName);
+            if (positions == null || index < 0 || index >= positions.Length)
+            {
+                return $"{jointName}: --";
+            }
+
+            var position = positions[index];
+            return $"{jointName}: ({position.x:0.00}, {position.y:0.00}, {position.z:0.00})";
         }
     }
 }

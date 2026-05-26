@@ -22,6 +22,7 @@ namespace Odoro
         private readonly LibraryScreenView libraryScreen;
         private readonly OdoroScreenTransitionController transitionController;
         private readonly StudioToastView toastView;
+        private readonly DebugHudView debugHudView;
 
         public OdoroStudioUiToolkitView(GameObject host, OdoroStudioUiActions actions)
         {
@@ -73,6 +74,7 @@ namespace Odoro
                 [StudioScreen.ClipsLibrary] = libraryScreen.Root,
             }, OdoroScreenTransitionProfile.Default);
             toastView = new StudioToastView(safeAreaRoot);
+            debugHudView = new DebugHudView(safeAreaRoot, actions);
         }
 
         public void Render(OdoroStudioUiSnapshot snapshot)
@@ -101,6 +103,7 @@ namespace Odoro
 
             RefreshLocalizedText(snapshot.stage?.isPlaying ?? false);
             toastView.Render(snapshot.transientMessage);
+            debugHudView.Render(snapshot.debug);
         }
 
         public void ApplySafeArea(Rect safeArea)

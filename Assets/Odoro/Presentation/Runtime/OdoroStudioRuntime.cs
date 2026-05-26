@@ -9,7 +9,6 @@ namespace Odoro
         private const int CapturePreviewSkeletonFrameInterval = 10;
         private const float TrackingSignalFreshnessSeconds = 0.75f;
         private const float DebugFrameCaptureDuration = 10f;
-        private const float DebugHudMargin = 18f;
 
         private MotionArchiveStore archiveStore;
         private IMotionSource motionSource;
@@ -44,7 +43,6 @@ namespace Odoro
         private string debugLastSavedPath;
         private string debugReplayPath;
         private string debugLastShareStatus;
-        private Vector2 debugHudScrollPosition;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -251,6 +249,11 @@ namespace Odoro
                 decreaseCountInBars = () => AdjustCountInBars(-1),
                 increaseCountInBars = () => AdjustCountInBars(1),
                 openTake = LoadTake,
+                showDebugHud = ShowDebugHud,
+                hideDebugHud = HideDebugHud,
+                startDebugFrameCapture = StartDebugFrameCapture,
+                stopDebugFrameCapture = () => StopDebugFrameCapture(true),
+                shareDebugMotionFrames = ShareDebugMotionFrames,
             });
         }
 
@@ -336,6 +339,7 @@ namespace Odoro
                 {
                     clips = libraryClips,
                 },
+                debug = BuildDebugHudSnapshot(),
             });
         }
 
@@ -599,186 +603,73 @@ namespace Odoro
             mainCamera.rect = new Rect(0f, 0f, 1f, 1f);
         }
 
-        private void OnGUI()
+        private bool DebugHudAvailable()
+        {
+            return Application.isEditor || Debug.isDebugBuild;
+        }
+
+        private DebugHudSnapshot BuildDebugHudSnapshot()
         {
             if (!DebugHudAvailable())
             {
-                return;
+                return new DebugHudSnapshot { isAvailable = false };
             }
 
-            if (!debugHudVisible)
+            var lines = new List<string>
             {
-                var safeArea = DebugHudSafeArea();
-                var buttonStyle = DebugHudButtonStyle();
-                var buttonHeight = DebugHudButtonHeight();
-                var buttonWidth = Mathf.Min(160f, safeArea.width - DebugHudMargin * 2f);
-                if (GUI.Button(
-                        new Rect(
-                            safeArea.x + DebugHudMargin,
-                            safeArea.y + DebugHudMargin,
-                            buttonWidth,
-                            buttonHeight
-                        ),
-                        "Debug",
-                        buttonStyle
-                    ))
-                {
-                    debugHudVisible = true;
-                }
-
-                return;
-            }
-
-            DrawDebugHud();
-        }
-
-        private void DrawDebugHud()
-        {
-            var safeArea = DebugHudSafeArea();
-            var margin = DebugHudMargin;
-            var panelWidth = Mathf.Min(Mathf.Max(360f, safeArea.width * 0.72f), safeArea.width - margin * 2f);
-            var panelHeight = Mathf.Min(Mathf.Clamp(safeArea.height * 0.58f, 520f, 980f), safeArea.height - margin * 2f);
-            var panelRect = new Rect(safeArea.x + margin, safeArea.y + margin, panelWidth, panelHeight);
-            var titleStyle = DebugHudTitleStyle();
-            var labelStyle = DebugHudLabelStyle();
-            var buttonStyle = DebugHudButtonStyle();
-            var buttonHeight = DebugHudButtonHeight();
-
-            GUILayout.BeginArea(panelRect, GUIContent.none, DebugHudBoxStyle());
-            debugHudScrollPosition = GUILayout.BeginScrollView(debugHudScrollPosition, false, false);
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Odoro Debug HUD", titleStyle);
-            if (GUILayout.Button("Hide", buttonStyle, GUILayout.Width(96f), GUILayout.Height(buttonHeight)))
-            {
-                debugHudVisible = false;
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(8f);
-            GUILayout.Label($"Source: {motionSource?.GetType().Name ?? "--"} ({motionSource?.CaptureMode.ToString() ?? "--"})", labelStyle);
-            GUILayout.Label($"Status: {interactor?.State.statusText ?? "--"}", labelStyle);
-            GUILayout.Label($"Motion FPS: {liveMotionFps:0.0}", labelStyle);
-            GUILayout.Label($"Frame age: {DebugFrameAgeLabel()}", labelStyle);
-            GUILayout.Label($"Joint count: {latestPreviewFrame?.jointPositions?.Length ?? 0}", labelStyle);
-            GUILayout.Label(DebugJointLabel(OdoroJointName.Root), labelStyle);
-            GUILayout.Label(DebugJointLabel(OdoroJointName.Head), labelStyle);
-            GUILayout.Label(DebugJointLabel(OdoroJointName.LeftWrist), labelStyle);
-            GUILayout.Label(DebugJointLabel(OdoroJointName.RightWrist), labelStyle);
+                $"Source: {motionSource?.GetType().Name ?? "--"} ({motionSource?.CaptureMode.ToString() ?? "--"})",
+                $"Status: {interactor?.State.statusText ?? "--"}",
+                $"Motion FPS: {liveMotionFps:0.0}",
+                $"Frame age: {DebugFrameAgeLabel()}",
+                $"Joint count: {latestPreviewFrame?.jointPositions?.Length ?? 0}",
+                DebugJointLabel(OdoroJointName.Root),
+                DebugJointLabel(OdoroJointName.Head),
+                DebugJointLabel(OdoroJointName.LeftWrist),
+                DebugJointLabel(OdoroJointName.RightWrist),
+                $"Replay file: {(HasProjectReplayFile() ? "found" : "missing")}",
+            };
 
             if (!string.IsNullOrEmpty(debugReplayPath))
             {
-                GUILayout.Label($"Replay: {debugReplayPath}", labelStyle);
+                lines.Add($"Replay: {debugReplayPath}");
             }
 
             if (!string.IsNullOrEmpty(debugLastSavedPath))
             {
-                GUILayout.Label($"Saved: {debugLastSavedPath}", labelStyle);
+                lines.Add($"Saved: {debugLastSavedPath}");
             }
 
             if (!string.IsNullOrEmpty(debugLastShareStatus))
             {
-                GUILayout.Label(debugLastShareStatus, labelStyle);
+                lines.Add(debugLastShareStatus);
             }
 
-            GUILayout.Space(8f);
             if (debugFrameCaptureActive)
             {
-                GUILayout.Label($"Capturing: {debugCapturedFrames.Count} frames / {DebugFrameCaptureRemainingSeconds():0.0}s", labelStyle);
-                if (GUILayout.Button("Stop & Save MotionFrames", buttonStyle, GUILayout.Height(buttonHeight)))
-                {
-                    StopDebugFrameCapture(true);
-                }
-            }
-            else if (GUILayout.Button("Save Next 10s MotionFrames", buttonStyle, GUILayout.Height(buttonHeight)))
-            {
-                StartDebugFrameCapture();
+                lines.Add($"Capturing: {debugCapturedFrames.Count} frames / {DebugFrameCaptureRemainingSeconds():0.0}s");
             }
 
-            if (DebugFileSharer.IsAvailable && HasShareableDebugMotionFile())
+            return new DebugHudSnapshot
             {
-                if (GUILayout.Button("Share MotionFrames", buttonStyle, GUILayout.Height(buttonHeight)))
-                {
-                    ShareDebugMotionFrames();
-                }
-            }
-
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
-        }
-
-        private Rect DebugHudSafeArea()
-        {
-            var safeArea = Screen.safeArea;
-            if (safeArea.width <= 0f || safeArea.height <= 0f)
-            {
-                return new Rect(0f, 0f, Screen.width, Screen.height);
-            }
-
-            return new Rect(
-                safeArea.xMin,
-                Screen.height - safeArea.yMax,
-                safeArea.width,
-                safeArea.height
-            );
-        }
-
-        private int DebugHudFontSize()
-        {
-            return Mathf.RoundToInt(Mathf.Clamp(Mathf.Min(Screen.width, Screen.height) / 30f, 18f, 34f));
-        }
-
-        private float DebugHudButtonHeight()
-        {
-            return DebugHudFontSize() * 2.45f;
-        }
-
-        private GUIStyle DebugHudBoxStyle()
-        {
-            var fontSize = DebugHudFontSize();
-            return new GUIStyle(GUI.skin.box)
-            {
-                padding = new RectOffset(fontSize, fontSize, fontSize, fontSize),
-                normal =
-                {
-                    textColor = Color.white,
-                },
+                isAvailable = true,
+                isVisible = debugHudVisible,
+                isCapturing = debugFrameCaptureActive,
+                canShare = DebugFileSharer.IsAvailable && HasShareableDebugMotionFile(),
+                lines = lines.ToArray(),
+                captureButtonLabel = debugFrameCaptureActive ? "Stop & Save MotionFrames" : "Save Next 10s MotionFrames",
             };
         }
 
-        private GUIStyle DebugHudTitleStyle()
+        private void ShowDebugHud()
         {
-            return new GUIStyle(GUI.skin.label)
-            {
-                fontSize = Mathf.RoundToInt(DebugHudFontSize() * 1.15f),
-                fontStyle = FontStyle.Bold,
-                wordWrap = true,
-                normal = { textColor = Color.white },
-            };
+            debugHudVisible = true;
+            RefreshUi();
         }
 
-        private GUIStyle DebugHudLabelStyle()
+        private void HideDebugHud()
         {
-            return new GUIStyle(GUI.skin.label)
-            {
-                fontSize = DebugHudFontSize(),
-                wordWrap = true,
-                normal = { textColor = Color.white },
-            };
-        }
-
-        private GUIStyle DebugHudButtonStyle()
-        {
-            return new GUIStyle(GUI.skin.button)
-            {
-                fontSize = DebugHudFontSize(),
-                fontStyle = FontStyle.Bold,
-                wordWrap = true,
-            };
-        }
-
-        private bool DebugHudAvailable()
-        {
-            return Application.isEditor || Debug.isDebugBuild;
+            debugHudVisible = false;
+            RefreshUi();
         }
 
         private void StartDebugFrameCapture()
@@ -789,6 +680,7 @@ namespace Odoro
             debugFrameCaptureFirstSourceTime = -1f;
             debugLastSavedPath = null;
             debugLastShareStatus = null;
+            RefreshUi();
         }
 
         private void CaptureDebugFrame(MotionFrame frame)
@@ -809,6 +701,12 @@ namespace Odoro
             if (Time.unscaledTime - debugFrameCaptureStartedAt >= DebugFrameCaptureDuration)
             {
                 StopDebugFrameCapture(true);
+                return;
+            }
+
+            if (debugHudVisible)
+            {
+                RefreshUi();
             }
         }
 
@@ -839,11 +737,22 @@ namespace Odoro
                 Debug.LogException(exception);
                 debugLastSavedPath = $"Save failed: {exception.Message}";
             }
+
+            RefreshUi();
         }
 
         private bool HasShareableDebugMotionFile()
         {
             return System.IO.File.Exists(MotionDebugFrameStore.DefaultReplayPath);
+        }
+
+        private bool HasProjectReplayFile()
+        {
+#if UNITY_EDITOR
+            return System.IO.File.Exists(MotionDebugFrameStore.ProjectReplayPath);
+#else
+            return false;
+#endif
         }
 
         private void ShareDebugMotionFrames()
@@ -852,6 +761,7 @@ namespace Odoro
             debugLastShareStatus = DebugFileSharer.ShareFile(path)
                 ? "Sharing MotionFrames..."
                 : "Share failed: no debug MotionFrames file.";
+            RefreshUi();
         }
 
         private float DebugFrameCaptureRemainingSeconds()

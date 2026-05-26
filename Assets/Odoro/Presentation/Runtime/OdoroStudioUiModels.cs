@@ -25,6 +25,11 @@ namespace Odoro
         public Action decreaseCountInBars;
         public Action increaseCountInBars;
         public Action<MotionTakeSummary> openTake;
+        public Action showDebugHud;
+        public Action hideDebugHud;
+        public Action startDebugFrameCapture;
+        public Action stopDebugFrameCapture;
+        public Action shareDebugMotionFrames;
     }
 
     public sealed class OdoroStudioUiSnapshot
@@ -35,6 +40,7 @@ namespace Odoro
         public RecordingSettingsScreenSnapshot settings;
         public StageScreenSnapshot stage;
         public LibraryScreenSnapshot library;
+        public DebugHudSnapshot debug;
     }
 
     public sealed class CaptureScreenSnapshot
@@ -75,5 +81,15 @@ namespace Odoro
     public sealed class LibraryScreenSnapshot
     {
         public IReadOnlyList<MotionTakeSummary> clips;
+    }
+
+    public sealed class DebugHudSnapshot
+    {
+        public bool isAvailable;
+        public bool isVisible;
+        public bool isCapturing;
+        public bool canShare;
+        public string[] lines;
+        public string captureButtonLabel;
     }
 }

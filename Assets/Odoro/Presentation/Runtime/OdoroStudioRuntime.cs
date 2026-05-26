@@ -73,6 +73,7 @@ namespace Odoro
 
             ConfigureCamera();
             ConfigureInteractor();
+            LoadRecordedReplayClip();
             ConfigureUi();
             RefreshLibrary();
             motionSource.Activate(MotionSourceActivity.Preview);
@@ -224,6 +225,18 @@ namespace Odoro
             };
 
             interactor.OnRecordingCompleted += HandleRecordingCompleted;
+        }
+
+        private void LoadRecordedReplayClip()
+        {
+            if (motionSource is not RecordedMotionSource recordedSource || !recordedSource.IsSupported)
+            {
+                return;
+            }
+
+            interactor.ReplaceCurrentClip(recordedSource.PlaybackClip, recordedSource.SourceClip);
+            latestPreviewFrame = recordedSource.PlaybackClip.Sample(0f);
+            capturePreviewSkeletonFrameReady = true;
         }
 
         private void ConfigureUi()

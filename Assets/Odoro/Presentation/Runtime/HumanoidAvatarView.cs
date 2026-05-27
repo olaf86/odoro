@@ -213,17 +213,11 @@ namespace Odoro
             TryAddNamedBinding(bindings, bones, OdoroJointName.Spine, OdoroJointName.Chest, "spine", "spine1", "spine01", "j_bip_c_spine");
             TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.Neck, "chest", "upperchest", "spine2", "j_bip_c_chest", "j_bip_c_upperchest");
             TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "neck", "j_bip_c_neck");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "head", "j_bip_c_head");
-
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.LeftShoulder, "leftshoulder", "lshoulder", "shoulderl", "j_bip_l_shoulder");
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml", "j_bip_l_upperarm");
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "leftlowerarm", "leftforearm", "llowerarm", "forearml", "j_bip_l_lowerarm");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "lefthand", "lhand", "handl", "j_bip_l_hand");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.RightShoulder, "rightshoulder", "rshoulder", "shoulderr", "j_bip_r_shoulder");
             TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr", "j_bip_r_upperarm");
             TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "rightlowerarm", "rightforearm", "rlowerarm", "forearmr", "j_bip_r_lowerarm");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "righthand", "rhand", "handr", "j_bip_r_hand");
 
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftHip, OdoroJointName.LeftKnee, "leftupperleg", "leftupleg", "leftthigh", "lupperleg", "thighl", "j_bip_l_upperleg");
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftKnee, OdoroJointName.LeftAnkle, "leftlowerleg", "leftleg", "leftcalf", "llowerleg", "calfl", "j_bip_l_lowerleg");

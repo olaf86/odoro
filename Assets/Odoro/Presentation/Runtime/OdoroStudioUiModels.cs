@@ -15,6 +15,7 @@ namespace Odoro
         public Action toggleSkeleton;
         public Action togglePlayback;
         public Action showModelInfo;
+        public Action showModelSelection;
         public Action saveTake;
         public Action decreaseBpm;
         public Action increaseBpm;
@@ -25,6 +26,7 @@ namespace Odoro
         public Action decreaseCountInBars;
         public Action increaseCountInBars;
         public Action<MotionTakeSummary> openTake;
+        public Action<string> selectAvatarOption;
         public Action showDebugHud;
         public Action hideDebugHud;
         public Action startDebugFrameCapture;
@@ -40,6 +42,7 @@ namespace Odoro
         public RecordingSettingsScreenSnapshot settings;
         public StageScreenSnapshot stage;
         public LibraryScreenSnapshot library;
+        public ModelSelectionScreenSnapshot modelSelection;
         public DebugHudSnapshot debug;
     }
 
@@ -76,6 +79,23 @@ namespace Odoro
         public string summary;
         public string modeLabel;
         public string hint;
+    }
+
+    public sealed class ModelSelectionScreenSnapshot
+    {
+        public IReadOnlyList<StageAvatarOptionSnapshot> options;
+        public string selectedOptionId;
+        public bool isBusy;
+    }
+
+    public sealed class StageAvatarOptionSnapshot
+    {
+        public string id;
+        public string title;
+        public string subtitle;
+        public bool isSelected;
+        public bool usesAvatar;
+        public bool requiresDownload;
     }
 
     public sealed class LibraryScreenSnapshot

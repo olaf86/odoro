@@ -19,16 +19,33 @@ namespace Odoro
         private readonly Animator animator;
         private readonly List<BoneBinding> bindings = new List<BoneBinding>();
         private readonly Vector3 rootToHipsOffset;
+        private readonly string displayName;
 
-        private HumanoidAvatarView(GameObject root, Animator animator, List<BoneBinding> bindings, Vector3 rootToHipsOffset)
+        private HumanoidAvatarView(
+            GameObject root,
+            Animator animator,
+            List<BoneBinding> bindings,
+            Vector3 rootToHipsOffset,
+            string displayName
+        )
         {
             this.root = root;
             this.animator = animator;
             this.bindings = bindings;
             this.rootToHipsOffset = rootToHipsOffset;
+            this.displayName = displayName;
         }
 
-        public bool IsAvailable => root != null && animator != null;
+        public bool IsAvailable => root != null && bindings.Count > 0;
+
+        public string DisplayName => displayName;
+
+        public int BindingCount => bindings.Count;
+
+        public static bool HasResource(string resourcePath)
+        {
+            return Resources.Load<GameObject>(resourcePath) != null;
+        }
 
         public static HumanoidAvatarView TryCreateFromResources(string resourcePath = "Odoro/DefaultAvatar")
         {
@@ -40,25 +57,57 @@ namespace Odoro
 
             var instance = UnityEngine.Object.Instantiate(prefab);
             instance.name = "Odoro Stage Avatar";
+            return TryCreateFromInstance(instance, prefab.name, false);
+        }
+
+        public static HumanoidAvatarView TryCreateFromInstance(
+            GameObject instance,
+            string sourceName,
+            bool normalizeBoundsForStage = true
+        )
+        {
+            if (instance == null)
+            {
+                return null;
+            }
+
+            if (normalizeBoundsForStage)
+            {
+                NormalizeBoundsForStage(instance);
+            }
+
             var animator = instance.GetComponentInChildren<Animator>();
-            if (animator == null || animator.avatar == null || !animator.isHuman)
+            var bindings = animator != null && animator.avatar != null && animator.isHuman
+                ? BuildHumanoidBindings(animator)
+                : BuildNamedTransformBindings(instance.transform);
+
+            if (bindings.Count == 0)
             {
                 Debug.LogWarning(
-                    "Default avatar prefab must contain a humanoid Animator to be driven by Odoro."
+                    $"Avatar '{sourceName}' does not contain a supported humanoid rig or recognizable bone names."
                 );
                 UnityEngine.Object.Destroy(instance);
                 return null;
             }
 
-            animator.enabled = false;
-            var bindings = BuildBindings(animator);
-            var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            if (animator != null)
+            {
+                animator.enabled = false;
+            }
+
+            var hips = animator != null ? animator.GetBoneTransform(HumanBodyBones.Hips) : FindRootBone(instance.transform);
             var rootToHipsOffset = hips == null
                 ? Vector3.zero
                 : hips.position - instance.transform.position;
 
             instance.SetActive(false);
-            return new HumanoidAvatarView(instance, animator, bindings, rootToHipsOffset);
+            return new HumanoidAvatarView(
+                instance,
+                animator,
+                bindings,
+                rootToHipsOffset,
+                string.IsNullOrWhiteSpace(sourceName) ? "Avatar" : sourceName
+            );
         }
 
         public void SetVisible(bool isVisible)
@@ -123,7 +172,7 @@ namespace Odoro
             }
         }
 
-        private static List<BoneBinding> BuildBindings(Animator animator)
+        private static List<BoneBinding> BuildHumanoidBindings(Animator animator)
         {
             var bindings = new List<BoneBinding>();
 
@@ -154,6 +203,76 @@ namespace Odoro
             return bindings;
         }
 
+        private static List<BoneBinding> BuildNamedTransformBindings(Transform root)
+        {
+            var bones = new Dictionary<string, Transform>();
+            CollectBones(root, bones);
+
+            var bindings = new List<BoneBinding>();
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Root, OdoroJointName.Spine, "hips", "pelvis");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Spine, OdoroJointName.Chest, "spine", "spine1", "spine01");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.Neck, "chest", "upperchest", "spine2");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "neck");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "head");
+
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.LeftShoulder, "leftshoulder", "lshoulder", "shoulderl");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "leftlowerarm", "leftforearm", "llowerarm", "forearml");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "lefthand", "lhand", "handl");
+
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.RightShoulder, "rightshoulder", "rshoulder", "shoulderr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "rightlowerarm", "rightforearm", "rlowerarm", "forearmr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "righthand", "rhand", "handr");
+
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftHip, OdoroJointName.LeftKnee, "leftupperleg", "leftupleg", "leftthigh", "lupperleg", "thighl");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftKnee, OdoroJointName.LeftAnkle, "leftlowerleg", "leftleg", "leftcalf", "llowerleg", "calfl");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftAnkle, OdoroJointName.LeftFoot, "leftfoot", "lfoot", "footl");
+
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightHip, OdoroJointName.RightKnee, "rightupperleg", "rightupleg", "rightthigh", "rupperleg", "thighr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightKnee, OdoroJointName.RightAnkle, "rightlowerleg", "rightleg", "rightcalf", "rlowerleg", "calfr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightAnkle, OdoroJointName.RightFoot, "rightfoot", "rfoot", "footr");
+
+            return bindings;
+        }
+
+        private static void CollectBones(Transform transform, Dictionary<string, Transform> bones)
+        {
+            if (transform == null)
+            {
+                return;
+            }
+
+            var normalized = NormalizeBoneName(transform.name);
+            if (!string.IsNullOrEmpty(normalized) && !bones.ContainsKey(normalized))
+            {
+                bones.Add(normalized, transform);
+            }
+
+            for (var childIndex = 0; childIndex < transform.childCount; childIndex += 1)
+            {
+                CollectBones(transform.GetChild(childIndex), bones);
+            }
+        }
+
+        private static void TryAddNamedBinding(
+            List<BoneBinding> bindings,
+            Dictionary<string, Transform> bones,
+            OdoroJointName startJoint,
+            OdoroJointName endJoint,
+            params string[] aliases
+        )
+        {
+            for (var aliasIndex = 0; aliasIndex < aliases.Length; aliasIndex += 1)
+            {
+                if (bones.TryGetValue(NormalizeBoneName(aliases[aliasIndex]), out var bone))
+                {
+                    AddBinding(bindings, bone, startJoint, endJoint);
+                    return;
+                }
+            }
+        }
+
         private static void TryAddBinding(
             List<BoneBinding> bindings,
             Animator animator,
@@ -168,6 +287,16 @@ namespace Odoro
                 return;
             }
 
+            AddBinding(bindings, bone, startJoint, endJoint);
+        }
+
+        private static void AddBinding(
+            List<BoneBinding> bindings,
+            Transform bone,
+            OdoroJointName startJoint,
+            OdoroJointName endJoint
+        )
+        {
             var child = FirstChildBone(bone);
             var restDirection = child == null ? Vector3.up : (child.position - bone.position).normalized;
             if (restDirection.sqrMagnitude < 0.0001f)
@@ -183,6 +312,53 @@ namespace Odoro
                 restRotation = bone.rotation,
                 restDirection = restDirection,
             });
+        }
+
+        private static Transform FindRootBone(Transform root)
+        {
+            var bones = new Dictionary<string, Transform>();
+            CollectBones(root, bones);
+            return bones.TryGetValue("hips", out var hips) || bones.TryGetValue("pelvis", out hips) ? hips : root;
+        }
+
+        private static string NormalizeBoneName(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value
+                .ToLowerInvariant()
+                .Replace("_", string.Empty)
+                .Replace("-", string.Empty)
+                .Replace(".", string.Empty)
+                .Replace(" ", string.Empty)
+                .Replace("mixamorig:", string.Empty)
+                .Replace("mixamorig", string.Empty);
+        }
+
+        private static void NormalizeBoundsForStage(GameObject instance)
+        {
+            var renderers = instance.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0)
+            {
+                return;
+            }
+
+            var bounds = renderers[0].bounds;
+            for (var rendererIndex = 1; rendererIndex < renderers.Length; rendererIndex += 1)
+            {
+                bounds.Encapsulate(renderers[rendererIndex].bounds);
+            }
+
+            if (bounds.size.y <= 0.001f)
+            {
+                return;
+            }
+
+            var scale = 1.7f / bounds.size.y;
+            instance.transform.localScale *= scale;
         }
 
         private static Transform FirstChildBone(Transform transform)

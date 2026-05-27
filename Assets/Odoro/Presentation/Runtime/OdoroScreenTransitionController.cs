@@ -251,6 +251,7 @@ namespace Odoro
                 StudioScreen.RecordingSettings => 1,
                 StudioScreen.ClipsLibrary => 2,
                 StudioScreen.Stage => 3,
+                StudioScreen.ModelSelection => 4,
                 _ => 0,
             };
         }

@@ -10,6 +10,7 @@ namespace Odoro
         RecordingSettings,
         ClipsLibrary,
         Stage,
+        ModelSelection,
     }
 
     public enum MotionSourceActivity

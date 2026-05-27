@@ -130,3 +130,7 @@ InitTestScene*.unity*
 # Unity recovery artifacts
 /[Aa]ssets/_Recovery/
 /[Aa]ssets/_Recovery.meta
+
+# Local Odoro avatar storage configuration. Keep bucket URLs out of source.
+/Assets/Odoro/Resources/Odoro/AvatarStorage.json
+/Assets/Odoro/Resources/Odoro/AvatarStorage.json.meta

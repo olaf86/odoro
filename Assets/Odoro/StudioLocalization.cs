@@ -32,6 +32,12 @@ namespace Odoro
         public static string LibraryTitle => Get("library.title");
         public static string LibrarySubtitle => Get("library.subtitle");
         public static string LibraryEmpty => Get("library.empty");
+        public static string ModelSelectionTitle => Get("model-selection.title");
+        public static string ModelSelectionSubtitle => Get("model-selection.subtitle");
+        public static string ModelSelected => Get("model-selection.selected");
+        public static string ModelTapToUse => Get("model-selection.tap-to-use");
+        public static string ModelTapToDownload => Get("model-selection.tap-to-download");
+        public static string ModelSkeletonPreview => Get("model-selection.skeleton-preview");
         public static string StageTitleFallback => Get("stage.title-fallback");
         public static string StageNoClip => Get("stage.no-clip");
         public static string AvatarLabel => Get("stage.avatar-label");
@@ -78,6 +84,10 @@ namespace Odoro
         public static string ToastNeedCaptureFirst => Get("toast.need-capture-first");
         public static string ToastAvatarActive => Get("toast.avatar-active");
         public static string ToastAvatarMissing => Get("toast.avatar-missing");
+        public static string ToastAvatarLoading => Get("toast.avatar-loading");
+        public static string ToastAvatarDownloading(string name) => Get("toast.avatar-downloading", name);
+        public static string ToastAvatarLoaded(string name) => Get("toast.avatar-loaded", name);
+        public static string ToastAvatarImportFailed(string error) => Get("toast.avatar-import-failed", error);
         public static string ToastAlreadySaved => Get("toast.already-saved");
         public static string ToastRecordingStarted => Get("toast.recording-started");
         public static string ToastStoredTakeLoaded => Get("toast.stored-take-loaded");

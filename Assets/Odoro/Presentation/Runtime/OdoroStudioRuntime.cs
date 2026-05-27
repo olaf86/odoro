@@ -441,18 +441,15 @@ namespace Odoro
         private void SelectInitialAvatar()
         {
             var storedSelection = PlayerPrefs.GetString("Odoro.SelectedAvatarOption", string.Empty);
-            var storedOption = FindAvatarOption(storedSelection);
-            var option = storedOption != null && !storedOption.RequiresDownload
-                ? storedOption
-                : FirstInstalledAvatarOption() ?? FirstSkeletonOption();
+            var option = FindAvatarOption(storedSelection) ?? FirstAvatarOption() ?? FirstSkeletonOption();
             ApplyAvatarOption(option, false);
         }
 
-        private StageAvatarOption FirstInstalledAvatarOption()
+        private StageAvatarOption FirstAvatarOption()
         {
             for (var optionIndex = 0; optionIndex < avatarOptions.Count; optionIndex += 1)
             {
-                if (avatarOptions[optionIndex].UsesAvatar && !avatarOptions[optionIndex].RequiresDownload)
+                if (avatarOptions[optionIndex].UsesAvatar)
                 {
                     return avatarOptions[optionIndex];
                 }
@@ -509,7 +506,6 @@ namespace Odoro
                 ShowTransientMessage(StudioL10n.ToastAvatarDownloading(option.title));
                 var installedOption = await avatarAssetStore.InstallDownloadableAvatarAsync(option);
                 RefreshAvatarLibrary();
-                avatarDownloadInProgress = false;
                 ApplyAvatarOption(FindAvatarOption(installedOption.id) ?? installedOption, true);
             }
             catch (Exception exception)
@@ -542,7 +538,7 @@ namespace Odoro
             {
                 if (showResult)
                 {
-                    ShowTransientMessage(StudioL10n.ToastAvatarLoaded(option.title));
+                    ShowTransientMessage(option.title);
                 }
 
                 RefreshUi();

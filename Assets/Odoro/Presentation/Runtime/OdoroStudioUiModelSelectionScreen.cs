@@ -41,7 +41,7 @@ namespace Odoro
 
             foreach (var option in snapshot.options)
             {
-                optionList.Add(BuildOptionButton(option, snapshot.isBusy));
+                optionList.Add(BuildOptionButton(option));
             }
         }
 
@@ -68,11 +68,10 @@ namespace Odoro
             return header;
         }
 
-        private Button BuildOptionButton(StageAvatarOptionSnapshot option, bool isBusy)
+        private Button BuildOptionButton(StageAvatarOptionSnapshot option)
         {
             var button = new Button(() => actions.selectAvatarOption?.Invoke(option.id));
             button.focusable = false;
-            button.SetEnabled(!isBusy);
             button.style.marginBottom = 10f;
             button.style.paddingLeft = 14f;
             button.style.paddingRight = 14f;

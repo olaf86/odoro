@@ -209,29 +209,29 @@ namespace Odoro
             CollectBones(root, bones);
 
             var bindings = new List<BoneBinding>();
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Root, OdoroJointName.Spine, "hips", "pelvis");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Spine, OdoroJointName.Chest, "spine", "spine1", "spine01");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.Neck, "chest", "upperchest", "spine2");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "neck");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "head");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Root, OdoroJointName.Spine, "hips", "pelvis", "j_bip_c_hips");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Spine, OdoroJointName.Chest, "spine", "spine1", "spine01", "j_bip_c_spine");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.Neck, "chest", "upperchest", "spine2", "j_bip_c_chest", "j_bip_c_upperchest");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "neck", "j_bip_c_neck");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "head", "j_bip_c_head");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.LeftShoulder, "leftshoulder", "lshoulder", "shoulderl");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "leftlowerarm", "leftforearm", "llowerarm", "forearml");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "lefthand", "lhand", "handl");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.LeftShoulder, "leftshoulder", "lshoulder", "shoulderl", "j_bip_l_shoulder");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml", "j_bip_l_upperarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "leftlowerarm", "leftforearm", "llowerarm", "forearml", "j_bip_l_lowerarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "lefthand", "lhand", "handl", "j_bip_l_hand");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.RightShoulder, "rightshoulder", "rshoulder", "shoulderr");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "rightlowerarm", "rightforearm", "rlowerarm", "forearmr");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "righthand", "rhand", "handr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.RightShoulder, "rightshoulder", "rshoulder", "shoulderr", "j_bip_r_shoulder");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr", "j_bip_r_upperarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "rightlowerarm", "rightforearm", "rlowerarm", "forearmr", "j_bip_r_lowerarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "righthand", "rhand", "handr", "j_bip_r_hand");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftHip, OdoroJointName.LeftKnee, "leftupperleg", "leftupleg", "leftthigh", "lupperleg", "thighl");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftKnee, OdoroJointName.LeftAnkle, "leftlowerleg", "leftleg", "leftcalf", "llowerleg", "calfl");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftAnkle, OdoroJointName.LeftFoot, "leftfoot", "lfoot", "footl");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftHip, OdoroJointName.LeftKnee, "leftupperleg", "leftupleg", "leftthigh", "lupperleg", "thighl", "j_bip_l_upperleg");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftKnee, OdoroJointName.LeftAnkle, "leftlowerleg", "leftleg", "leftcalf", "llowerleg", "calfl", "j_bip_l_lowerleg");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftAnkle, OdoroJointName.LeftFoot, "leftfoot", "lfoot", "footl", "j_bip_l_foot");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightHip, OdoroJointName.RightKnee, "rightupperleg", "rightupleg", "rightthigh", "rupperleg", "thighr");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightKnee, OdoroJointName.RightAnkle, "rightlowerleg", "rightleg", "rightcalf", "rlowerleg", "calfr");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightAnkle, OdoroJointName.RightFoot, "rightfoot", "rfoot", "footr");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightHip, OdoroJointName.RightKnee, "rightupperleg", "rightupleg", "rightthigh", "rupperleg", "thighr", "j_bip_r_upperleg");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightKnee, OdoroJointName.RightAnkle, "rightlowerleg", "rightleg", "rightcalf", "rlowerleg", "calfr", "j_bip_r_lowerleg");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightAnkle, OdoroJointName.RightFoot, "rightfoot", "rfoot", "footr", "j_bip_r_foot");
 
             return bindings;
         }
@@ -318,7 +318,11 @@ namespace Odoro
         {
             var bones = new Dictionary<string, Transform>();
             CollectBones(root, bones);
-            return bones.TryGetValue("hips", out var hips) || bones.TryGetValue("pelvis", out hips) ? hips : root;
+            return bones.TryGetValue("hips", out var hips)
+                || bones.TryGetValue("pelvis", out hips)
+                || bones.TryGetValue(NormalizeBoneName("j_bip_c_hips"), out hips)
+                ? hips
+                : root;
         }
 
         private static string NormalizeBoneName(string value)

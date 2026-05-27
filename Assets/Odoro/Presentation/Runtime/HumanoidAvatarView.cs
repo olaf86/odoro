@@ -20,6 +20,7 @@ namespace Odoro
         private readonly List<BoneBinding> bindings = new List<BoneBinding>();
         private readonly Vector3 rootToHipsOffset;
         private readonly string displayName;
+        private bool debugSwapArmJoints;
 
         private HumanoidAvatarView(
             GameObject root,
@@ -41,6 +42,11 @@ namespace Odoro
         public string DisplayName => displayName;
 
         public int BindingCount => bindings.Count;
+
+        public void SetDebugSwapArmJoints(bool isEnabled)
+        {
+            debugSwapArmJoints = isEnabled;
+        }
 
         public static bool HasResource(string resourcePath)
         {
@@ -144,8 +150,10 @@ namespace Odoro
                     continue;
                 }
 
-                var startIndex = OdoroSkeletonDefinition.IndexOf(binding.startJoint);
-                var endIndex = OdoroSkeletonDefinition.IndexOf(binding.endJoint);
+                var startJoint = debugSwapArmJoints ? DebugArmSwapJoint(binding.startJoint) : binding.startJoint;
+                var endJoint = debugSwapArmJoints ? DebugArmSwapJoint(binding.endJoint) : binding.endJoint;
+                var startIndex = OdoroSkeletonDefinition.IndexOf(startJoint);
+                var endIndex = OdoroSkeletonDefinition.IndexOf(endJoint);
                 if (startIndex < 0 || endIndex < 0)
                 {
                     continue;
@@ -395,6 +403,22 @@ namespace Odoro
             }
 
             return transform.GetChild(0);
+        }
+
+        private static OdoroJointName DebugArmSwapJoint(OdoroJointName jointName)
+        {
+            return jointName switch
+            {
+                OdoroJointName.LeftShoulder => OdoroJointName.RightShoulder,
+                OdoroJointName.RightShoulder => OdoroJointName.LeftShoulder,
+                OdoroJointName.LeftUpperArm => OdoroJointName.RightUpperArm,
+                OdoroJointName.RightUpperArm => OdoroJointName.LeftUpperArm,
+                OdoroJointName.LeftElbow => OdoroJointName.RightElbow,
+                OdoroJointName.RightElbow => OdoroJointName.LeftElbow,
+                OdoroJointName.LeftWrist => OdoroJointName.RightWrist,
+                OdoroJointName.RightWrist => OdoroJointName.LeftWrist,
+                _ => jointName,
+            };
         }
     }
 }

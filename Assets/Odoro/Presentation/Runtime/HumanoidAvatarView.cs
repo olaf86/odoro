@@ -11,8 +11,8 @@ namespace Odoro
             public Transform bone;
             public OdoroJointName startJoint;
             public OdoroJointName endJoint;
-            public Quaternion restRotation;
-            public Vector3 restDirection;
+            public Quaternion restLocalRotation;
+            public Vector3 restLocalDirection;
         }
 
         private readonly GameObject root;
@@ -159,8 +159,18 @@ namespace Odoro
                     continue;
                 }
 
-                binding.bone.rotation = Quaternion.FromToRotation(binding.restDirection, desiredDirection.normalized)
-                    * binding.restRotation;
+                var parent = binding.bone.parent;
+                var desiredLocalDirection = parent == null
+                    ? desiredDirection.normalized
+                    : parent.InverseTransformDirection(desiredDirection.normalized);
+                if (desiredLocalDirection.sqrMagnitude < 0.0001f)
+                {
+                    continue;
+                }
+
+                binding.bone.localRotation =
+                    Quaternion.FromToRotation(binding.restLocalDirection, desiredLocalDirection.normalized)
+                    * binding.restLocalRotation;
             }
         }
 
@@ -292,10 +302,19 @@ namespace Odoro
         )
         {
             var child = FirstChildBone(bone);
-            var restDirection = child == null ? Vector3.up : (child.position - bone.position).normalized;
-            if (restDirection.sqrMagnitude < 0.0001f)
+            var restWorldDirection = child == null ? bone.TransformDirection(Vector3.up) : (child.position - bone.position).normalized;
+            if (restWorldDirection.sqrMagnitude < 0.0001f)
             {
-                restDirection = Vector3.up;
+                restWorldDirection = bone.TransformDirection(Vector3.up);
+            }
+
+            var parent = bone.parent;
+            var restLocalDirection = parent == null
+                ? restWorldDirection.normalized
+                : parent.InverseTransformDirection(restWorldDirection.normalized);
+            if (restLocalDirection.sqrMagnitude < 0.0001f)
+            {
+                restLocalDirection = Vector3.up;
             }
 
             bindings.Add(new BoneBinding
@@ -303,8 +322,8 @@ namespace Odoro
                 bone = bone,
                 startJoint = startJoint,
                 endJoint = endJoint,
-                restRotation = bone.rotation,
-                restDirection = restDirection,
+                restLocalRotation = bone.localRotation,
+                restLocalDirection = restLocalDirection.normalized,
             });
         }
 

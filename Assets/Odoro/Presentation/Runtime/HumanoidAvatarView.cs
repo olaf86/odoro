@@ -200,13 +200,13 @@ namespace Odoro
             TryAddBinding(bindings, animator, HumanBodyBones.Neck, OdoroJointName.Neck, OdoroJointName.Head);
             TryAddBinding(bindings, animator, HumanBodyBones.Head, OdoroJointName.Neck, OdoroJointName.Head);
 
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftShoulder, OdoroJointName.Chest, OdoroJointName.LeftShoulder);
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftUpperArm, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow);
+            TryAddBinding(bindings, animator, HumanBodyBones.LeftShoulder, OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm);
+            TryAddBinding(bindings, animator, HumanBodyBones.LeftUpperArm, OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow);
             TryAddBinding(bindings, animator, HumanBodyBones.LeftLowerArm, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist);
             TryAddBinding(bindings, animator, HumanBodyBones.LeftHand, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist);
 
-            TryAddBinding(bindings, animator, HumanBodyBones.RightShoulder, OdoroJointName.Chest, OdoroJointName.RightShoulder);
-            TryAddBinding(bindings, animator, HumanBodyBones.RightUpperArm, OdoroJointName.RightShoulder, OdoroJointName.RightElbow);
+            TryAddBinding(bindings, animator, HumanBodyBones.RightShoulder, OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm);
+            TryAddBinding(bindings, animator, HumanBodyBones.RightUpperArm, OdoroJointName.RightUpperArm, OdoroJointName.RightElbow);
             TryAddBinding(bindings, animator, HumanBodyBones.RightLowerArm, OdoroJointName.RightElbow, OdoroJointName.RightWrist);
             TryAddBinding(bindings, animator, HumanBodyBones.RightHand, OdoroJointName.RightElbow, OdoroJointName.RightWrist);
 
@@ -231,10 +231,12 @@ namespace Odoro
             TryAddNamedBinding(bindings, bones, OdoroJointName.Spine, OdoroJointName.Chest, "spine", "spine1", "spine01", "j_bip_c_spine");
             TryAddNamedBinding(bindings, bones, OdoroJointName.Chest, OdoroJointName.Neck, "chest", "upperchest", "spine2", "j_bip_c_chest", "j_bip_c_upperchest");
             TryAddNamedBinding(bindings, bones, OdoroJointName.Neck, OdoroJointName.Head, "neck", "j_bip_c_neck");
-            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml", "j_bip_l_upperarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm, "leftshoulder", "lshoulder", "shoulderl", "j_bip_l_shoulder");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow, "leftupperarm", "leftarm", "lupperarm", "upperarml", "j_bip_l_upperarm");
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, "leftlowerarm", "leftforearm", "llowerarm", "forearml", "j_bip_l_lowerarm");
 
-            TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr", "j_bip_r_upperarm");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm, "rightshoulder", "rshoulder", "shoulderr", "j_bip_r_shoulder");
+            TryAddNamedBinding(bindings, bones, OdoroJointName.RightUpperArm, OdoroJointName.RightElbow, "rightupperarm", "rightarm", "rupperarm", "upperarmr", "j_bip_r_upperarm");
             TryAddNamedBinding(bindings, bones, OdoroJointName.RightElbow, OdoroJointName.RightWrist, "rightlowerarm", "rightforearm", "rlowerarm", "forearmr", "j_bip_r_lowerarm");
 
             TryAddNamedBinding(bindings, bones, OdoroJointName.LeftHip, OdoroJointName.LeftKnee, "leftupperleg", "leftupleg", "leftthigh", "lupperleg", "thighl", "j_bip_l_upperleg");

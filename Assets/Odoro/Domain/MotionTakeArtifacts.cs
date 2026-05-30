@@ -22,15 +22,14 @@ namespace Odoro
     {
         public static MotionClip Prepare(MotionClip sourceClip, CaptureMode captureMode)
         {
+            _ = captureMode;
             if (sourceClip == null || sourceClip.IsEmpty)
             {
                 return sourceClip;
             }
 
-            var canonicalClip = captureMode == CaptureMode.Mock
-                ? sourceClip
-                : OdoroCanonicalPoseMapper.CanonicalizedClip(sourceClip);
-            return MotionClipStageRebaser.Rebased(canonicalClip);
+            var avatarSpaceClip = OdoroCanonicalPoseMapper.AvatarSpaceClip(sourceClip);
+            return MotionClipStageRebaser.Rebased(avatarSpaceClip);
         }
     }
 

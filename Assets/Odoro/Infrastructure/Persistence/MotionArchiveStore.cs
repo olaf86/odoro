@@ -107,11 +107,16 @@ namespace Odoro
                 }
 
                 var payload = payloadFileStore.Read(index.takes[i].localFilePath);
+                var record = index.takes[i];
                 var playbackClip = payload.ToMotionClip();
                 MotionClip sourceClip = null;
                 if (sourceClipFileStore.Exists(takeId))
                 {
                     sourceClip = sourceClipFileStore.Read(takeId);
+                    if (sourceClip != null && !sourceClip.IsEmpty)
+                    {
+                        playbackClip = MotionPlaybackClipPreparer.Prepare(sourceClip, record.captureMode);
+                    }
                 }
 
                 return new StoredMotionTake

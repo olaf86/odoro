@@ -46,7 +46,6 @@ namespace Odoro
         private string debugLastSavedPath;
         private string debugReplayPath;
         private string debugLastShareStatus;
-        private bool debugAvatarArmSwapEnabled;
         private bool avatarImportInProgress;
         private bool avatarDownloadInProgress;
         private bool selectedClipIsGeneratedMockStageClip;
@@ -280,7 +279,6 @@ namespace Odoro
                 startDebugFrameCapture = StartDebugFrameCapture,
                 stopDebugFrameCapture = () => StopDebugFrameCapture(true),
                 shareDebugMotionFrames = ShareDebugMotionFrames,
-                toggleDebugAvatarArmSwap = ToggleDebugAvatarArmSwap,
             });
         }
 
@@ -588,8 +586,6 @@ namespace Odoro
                 {
                     throw new InvalidOperationException("No supported avatar rig was found.");
                 }
-
-                avatarView.SetDebugSwapArmJoints(debugAvatarArmSwapEnabled);
 
                 if (showResult)
                 {
@@ -936,7 +932,7 @@ namespace Odoro
                 DebugJointLabel(OdoroJointName.LeftWrist),
                 DebugJointLabel(OdoroJointName.RightWrist),
                 $"Replay file: {(HasProjectReplayFile() ? "found" : "missing")}",
-                $"Avatar arm swap: {(debugAvatarArmSwapEnabled ? "on" : "off")}",
+                "Playback pose: avatar-space mirror",
             });
 
             if (!string.IsNullOrEmpty(debugReplayPath))
@@ -967,8 +963,6 @@ namespace Odoro
                 canShare = DebugFileSharer.IsAvailable && HasShareableDebugMotionFile(),
                 lines = lines.ToArray(),
                 captureButtonLabel = debugFrameCaptureActive ? "Stop & Save MotionFrames" : "Save Next 10s MotionFrames",
-                avatarArmSwapEnabled = debugAvatarArmSwapEnabled,
-                avatarArmSwapButtonLabel = debugAvatarArmSwapEnabled ? "Avatar Arms: Swapped" : "Avatar Arms: Normal",
             };
         }
 
@@ -992,14 +986,6 @@ namespace Odoro
         private void HideDebugHud()
         {
             debugHudVisible = false;
-            RefreshUi();
-        }
-
-        private void ToggleDebugAvatarArmSwap()
-        {
-            debugAvatarArmSwapEnabled = !debugAvatarArmSwapEnabled;
-            avatarView?.SetDebugSwapArmJoints(debugAvatarArmSwapEnabled);
-            ShowTransientMessage(debugAvatarArmSwapEnabled ? "Avatar arm swap enabled." : "Avatar arm swap disabled.");
             RefreshUi();
         }
 

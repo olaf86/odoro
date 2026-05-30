@@ -32,7 +32,6 @@ namespace Odoro
         public Action startDebugFrameCapture;
         public Action stopDebugFrameCapture;
         public Action shareDebugMotionFrames;
-        public Action toggleDebugAvatarArmSwap;
     }
 
     public sealed class OdoroStudioUiSnapshot
@@ -110,9 +109,7 @@ namespace Odoro
         public bool isVisible;
         public bool isCapturing;
         public bool canShare;
-        public bool avatarArmSwapEnabled;
         public string[] lines;
         public string captureButtonLabel;
-        public string avatarArmSwapButtonLabel;
     }
 }

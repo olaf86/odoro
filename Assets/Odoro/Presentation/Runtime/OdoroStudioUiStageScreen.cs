@@ -74,7 +74,7 @@ namespace Odoro
         {
             var footer = CreatePanel(new Color(0.04f, 0.05f, 0.08f, 0.72f), 22f);
             var quickActions = CreateRow();
-            modelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelInfo?.Invoke());
+            modelButton = CreateSecondaryButton(StudioL10n.ButtonModel, () => actions.showModelSelection?.Invoke());
             modelButton.button.style.marginRight = 10f;
             quickActions.Add(modelButton.button);
             recordAgainButton = CreateSecondaryButton(StudioL10n.ButtonRecordAgain, () => actions.showCapture?.Invoke());

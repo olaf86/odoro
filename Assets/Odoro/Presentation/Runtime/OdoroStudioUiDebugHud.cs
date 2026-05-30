@@ -13,6 +13,7 @@ namespace Odoro
         private readonly Label bodyLabel;
         private readonly Button hideButton;
         private readonly Button captureButton;
+        private readonly Button armSwapButton;
         private readonly Button shareButton;
 
         public DebugHudView(VisualElement parent, OdoroStudioUiActions actions)
@@ -69,6 +70,12 @@ namespace Odoro
             captureButton.style.marginTop = 12f;
             panel.Add(captureButton);
 
+            armSwapButton = new Button(() => actions.toggleDebugAvatarArmSwap?.Invoke());
+            StyleButton(armSwapButton);
+            armSwapButton.style.height = 48f;
+            armSwapButton.style.marginTop = 8f;
+            panel.Add(armSwapButton);
+
             shareButton = new Button(() => actions.shareDebugMotionFrames?.Invoke()) { text = "Share MotionFrames" };
             StyleButton(shareButton);
             shareButton.style.height = 48f;
@@ -98,6 +105,7 @@ namespace Odoro
 
             bodyLabel.text = snapshot.lines == null ? string.Empty : string.Join("\n", snapshot.lines);
             captureButton.text = snapshot.captureButtonLabel;
+            armSwapButton.text = snapshot.avatarArmSwapButtonLabel;
             captureButton.clicked -= StopCapture;
             captureButton.clicked -= StartCapture;
             if (snapshot.isCapturing)

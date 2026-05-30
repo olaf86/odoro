@@ -20,6 +20,7 @@ namespace Odoro
         private readonly RecordingSettingsScreenView settingsScreen;
         private readonly StageScreenView stageScreen;
         private readonly LibraryScreenView libraryScreen;
+        private readonly ModelSelectionScreenView modelSelectionScreen;
         private readonly OdoroScreenTransitionController transitionController;
         private readonly StudioToastView toastView;
         private readonly DebugHudView debugHudView;
@@ -66,12 +67,14 @@ namespace Odoro
             settingsScreen = new RecordingSettingsScreenView(contentColumn, actions);
             stageScreen = new StageScreenView(contentColumn, actions);
             libraryScreen = new LibraryScreenView(contentColumn, actions);
+            modelSelectionScreen = new ModelSelectionScreenView(contentColumn, actions);
             transitionController = new OdoroScreenTransitionController(safeAreaRoot, new Dictionary<StudioScreen, VisualElement>
             {
                 [StudioScreen.Capture] = captureScreen.Root,
                 [StudioScreen.RecordingSettings] = settingsScreen.Root,
                 [StudioScreen.Stage] = stageScreen.Root,
                 [StudioScreen.ClipsLibrary] = libraryScreen.Root,
+                [StudioScreen.ModelSelection] = modelSelectionScreen.Root,
             }, OdoroScreenTransitionProfile.Default);
             toastView = new StudioToastView(safeAreaRoot);
             debugHudView = new DebugHudView(safeAreaRoot, actions);
@@ -99,6 +102,11 @@ namespace Odoro
             if (snapshot.library != null)
             {
                 libraryScreen.Render(snapshot.library);
+            }
+
+            if (snapshot.modelSelection != null)
+            {
+                modelSelectionScreen.Render(snapshot.modelSelection);
             }
 
             RefreshLocalizedText(snapshot.stage?.isPlaying ?? false);
@@ -150,6 +158,7 @@ namespace Odoro
             settingsScreen.RefreshLocalizedText();
             stageScreen.RefreshLocalizedText(stagePlaybackActive);
             libraryScreen.RefreshLocalizedText();
+            modelSelectionScreen.RefreshLocalizedText();
         }
 
         private static ThemeStyleSheet ResolveRuntimeThemeStyleSheet(out ThemeStyleSheet fallbackTheme)

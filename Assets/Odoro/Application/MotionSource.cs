@@ -21,4 +21,9 @@ namespace Odoro
         Camera PrimaryCamera { get; }
         bool ManagesCamera { get; }
     }
+
+    public interface IMotionSourceDebugInfo
+    {
+        string[] DebugLines { get; }
+    }
 }

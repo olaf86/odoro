@@ -15,6 +15,7 @@ namespace Odoro
         public Action toggleSkeleton;
         public Action togglePlayback;
         public Action showModelInfo;
+        public Action showModelSelection;
         public Action saveTake;
         public Action decreaseBpm;
         public Action increaseBpm;
@@ -25,11 +26,13 @@ namespace Odoro
         public Action decreaseCountInBars;
         public Action increaseCountInBars;
         public Action<MotionTakeSummary> openTake;
+        public Action<string> selectAvatarOption;
         public Action showDebugHud;
         public Action hideDebugHud;
         public Action startDebugFrameCapture;
         public Action stopDebugFrameCapture;
         public Action shareDebugMotionFrames;
+        public Action toggleDebugAvatarArmSwap;
     }
 
     public sealed class OdoroStudioUiSnapshot
@@ -40,6 +43,7 @@ namespace Odoro
         public RecordingSettingsScreenSnapshot settings;
         public StageScreenSnapshot stage;
         public LibraryScreenSnapshot library;
+        public ModelSelectionScreenSnapshot modelSelection;
         public DebugHudSnapshot debug;
     }
 
@@ -78,6 +82,23 @@ namespace Odoro
         public string hint;
     }
 
+    public sealed class ModelSelectionScreenSnapshot
+    {
+        public IReadOnlyList<StageAvatarOptionSnapshot> options;
+        public string selectedOptionId;
+        public bool isBusy;
+    }
+
+    public sealed class StageAvatarOptionSnapshot
+    {
+        public string id;
+        public string title;
+        public string subtitle;
+        public bool isSelected;
+        public bool usesAvatar;
+        public bool requiresDownload;
+    }
+
     public sealed class LibraryScreenSnapshot
     {
         public IReadOnlyList<MotionTakeSummary> clips;
@@ -89,7 +110,9 @@ namespace Odoro
         public bool isVisible;
         public bool isCapturing;
         public bool canShare;
+        public bool avatarArmSwapEnabled;
         public string[] lines;
         public string captureButtonLabel;
+        public string avatarArmSwapButtonLabel;
     }
 }

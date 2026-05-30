@@ -5,6 +5,8 @@ namespace Odoro
 {
     public sealed class MockMotionSource : IMotionSource
     {
+        public const float DefaultClipFrameRate = 30f;
+
         public CaptureMode CaptureMode => CaptureMode.Mock;
         public bool IsSupported => true;
 
@@ -15,7 +17,7 @@ namespace Odoro
         private MotionSourceActivity currentActivity;
         private float lastEmitTime = -1f;
         private float startTime;
-        private const float FrameInterval = 1f / 30f;
+        private const float FrameInterval = 1f / DefaultClipFrameRate;
 
         public void Activate(MotionSourceActivity activity)
         {
@@ -44,36 +46,70 @@ namespace Odoro
             }
 
             lastEmitTime = now;
-            OnFrame?.Invoke(MakeFrame(Mathf.Max(0f, now - startTime)));
+            OnFrame?.Invoke(CreateFrame(Mathf.Max(0f, now - startTime), currentActivity));
         }
 
-        private MotionFrame MakeFrame(float time)
+        public static MotionClip CreateClip(float duration, MotionSourceActivity activity)
         {
-            var step = Mathf.Sin(time * 2.3f);
-            var sway = Mathf.Sin(time * 1.4f);
-            var armSwing = Mathf.Sin(time * 3.1f);
-            var bounce = Mathf.Max(0f, Mathf.Sin(time * 4.2f)) * 0.08f;
-            var activityBias = currentActivity == MotionSourceActivity.Recording ? 1f : 0.8f;
+            var clip = new MotionClip();
+            var frameCount = Mathf.Max(2, Mathf.CeilToInt(duration * DefaultClipFrameRate));
+            for (var frameIndex = 0; frameIndex < frameCount; frameIndex += 1)
+            {
+                var time = frameIndex / DefaultClipFrameRate;
+                clip.frames.Add(CreateFrame(time, activity));
+            }
 
-            var root = new Vector3(sway * 0.18f, 0.92f + bounce, 0f);
-            var head = root + new Vector3(0f, 0.60f, 0f);
-            var neck = Vector3.Lerp(root, head, 0.78f);
-            var chest = Vector3.Lerp(root, neck, 0.68f);
-            var spine = Vector3.Lerp(root, chest, 0.52f);
-            var leftShoulder = chest + new Vector3(-0.20f, 0.04f, 0f);
-            var rightShoulder = chest + new Vector3(0.20f, 0.04f, 0f);
-            var leftUpperArm = leftShoulder + new Vector3(-0.10f, 0.02f + armSwing * 0.03f * activityBias, 0f);
-            var rightUpperArm = rightShoulder + new Vector3(0.10f, 0.02f - armSwing * 0.03f * activityBias, 0f);
-            var leftElbow = leftUpperArm + new Vector3(-0.12f, 0.03f + armSwing * 0.11f * activityBias, 0f);
-            var rightElbow = rightUpperArm + new Vector3(0.12f, 0.03f - armSwing * 0.11f * activityBias, 0f);
-            var leftWrist = leftElbow + new Vector3(-0.14f, -0.10f + armSwing * 0.08f * activityBias, 0f);
-            var rightWrist = rightElbow + new Vector3(0.14f, -0.10f - armSwing * 0.08f * activityBias, 0f);
-            var leftHip = root + new Vector3(-0.12f, -0.02f, 0f);
-            var rightHip = root + new Vector3(0.12f, -0.02f, 0f);
-            var leftKnee = leftHip + new Vector3(-0.02f, -0.34f + Mathf.Max(0f, step) * 0.10f, 0f);
-            var rightKnee = rightHip + new Vector3(0.02f, -0.34f + Mathf.Max(0f, -step) * 0.10f, 0f);
-            var leftFoot = leftKnee + new Vector3(0.03f, -0.35f, 0.08f);
-            var rightFoot = rightKnee + new Vector3(0.03f, -0.35f, 0.08f);
+            return clip;
+        }
+
+        public static MotionFrame CreateFrame(float time, MotionSourceActivity activity)
+        {
+            var cycle = time * 2.15f;
+            var step = Mathf.Sin(cycle);
+            var counterStep = Mathf.Sin(cycle + Mathf.PI);
+            var sway = Mathf.Sin(cycle) * 0.5f + Mathf.Sin(time * 0.75f) * 0.5f;
+            var torsoBreath = Mathf.Sin(time * 1.35f);
+            var bounce = Mathf.Max(0f, Mathf.Sin(cycle * 2f)) * 0.006f;
+            var activityBias = activity == MotionSourceActivity.Recording ? 1f : 0.8f;
+
+            var yaw = sway * 0.025f;
+            var right = new Vector3(Mathf.Cos(yaw), 0f, Mathf.Sin(yaw));
+            var forward = new Vector3(-Mathf.Sin(yaw), 0f, Mathf.Cos(yaw));
+            var up = Vector3.up;
+
+            var root = right * (sway * 0.018f) + forward * (Mathf.Sin(time * 0.6f) * 0.01f);
+            root.y = 0.94f + bounce;
+
+            var spine = root + up * 0.21f + forward * (torsoBreath * 0.004f);
+            var chest = root + up * 0.42f + right * (sway * 0.006f) + forward * (torsoBreath * 0.008f);
+            var neck = root + up * 0.58f + right * (sway * 0.008f) + forward * 0.012f;
+            var head = root + up * 0.72f + right * (sway * 0.01f) + forward * 0.02f;
+
+            var leftShoulder = chest - right * 0.18f + up * 0.055f + forward * 0.006f;
+            var rightShoulder = chest + right * 0.18f + up * 0.055f + forward * 0.006f;
+
+            var leftArmForward = -step * 0.045f * activityBias;
+            var rightArmForward = -counterStep * 0.045f * activityBias;
+            var leftElbowBend = 0.035f + Mathf.Max(0f, -step) * 0.012f * activityBias;
+            var rightElbowBend = 0.035f + Mathf.Max(0f, -counterStep) * 0.012f * activityBias;
+
+            var leftElbow = leftShoulder - right * 0.035f - up * 0.29f + forward * (leftArmForward + leftElbowBend);
+            var rightElbow = rightShoulder + right * 0.035f - up * 0.29f + forward * (rightArmForward + rightElbowBend);
+            var leftWrist = leftElbow + right * 0.02f - up * 0.285f + forward * (leftArmForward * 0.25f - 0.012f);
+            var rightWrist = rightElbow - right * 0.02f - up * 0.285f + forward * (rightArmForward * 0.25f - 0.012f);
+            var leftUpperArm = Vector3.Lerp(leftShoulder, leftElbow, 0.5f);
+            var rightUpperArm = Vector3.Lerp(rightShoulder, rightElbow, 0.5f);
+
+            var leftHip = root - right * 0.12f - up * 0.025f + forward * 0.005f;
+            var rightHip = root + right * 0.12f - up * 0.025f - forward * 0.005f;
+            var leftStride = step * 0.075f * activityBias;
+            var rightStride = counterStep * 0.075f * activityBias;
+            var leftKneeLift = Mathf.Max(0f, step) * 0.045f * activityBias;
+            var rightKneeLift = Mathf.Max(0f, counterStep) * 0.045f * activityBias;
+            var leftKnee = leftHip - up * (0.38f - leftKneeLift) - right * 0.015f + forward * leftStride;
+            var rightKnee = rightHip - up * (0.38f - rightKneeLift) + right * 0.015f + forward * rightStride;
+            var leftFoot = leftKnee - up * 0.37f + right * 0.02f + forward * (0.06f + leftStride * 0.55f);
+            var rightFoot = rightKnee - up * 0.37f + right * 0.02f + forward * (0.06f + rightStride * 0.55f);
             var leftAnkle = Vector3.Lerp(leftKnee, leftFoot, 0.92f);
             var rightAnkle = Vector3.Lerp(rightKnee, rightFoot, 0.92f);
 

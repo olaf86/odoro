@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,7 +10,7 @@ using UnityEngine.XR.ARSubsystems;
 
 namespace Odoro
 {
-    public sealed class ArFoundationBodyMotionSource : MonoBehaviour, IMotionSource, IPrimaryCameraSource
+    public sealed class ArFoundationBodyMotionSource : MonoBehaviour, IMotionSource, IPrimaryCameraSource, IMotionSourceDebugInfo
     {
         private const int ArKitHips = 1;
         private const int ArKitLeftUpperLeg = 2;
@@ -47,6 +48,7 @@ namespace Odoro
 
         public Camera PrimaryCamera => arCamera;
         public bool ManagesCamera => arCamera != null;
+        public string[] DebugLines => debugLines;
 
         public event Action<MotionFrame> OnFrame;
         public event Action<string> OnStatusTextChanged;
@@ -68,6 +70,7 @@ namespace Odoro
         private ARSessionState lastSessionState = ARSessionState.None;
         private bool bodyDetected;
         private bool active;
+        private string[] debugLines = { "ARKit debug: waiting for body frame." };
 
         private void Awake()
         {
@@ -301,6 +304,11 @@ namespace Odoro
                     EmitStatusText(StudioL10n.StatusArLost);
                 }
 
+                debugLines = new[]
+                {
+                    $"ARKit debug: no tracked body ({eventArgs.added.Count} added, {eventArgs.updated.Count} updated).",
+                    $"AR session: {lastSessionState}",
+                };
                 return;
             }
 
@@ -390,7 +398,7 @@ namespace Odoro
             poseDriver.trackingStateInput = new InputActionProperty(trackingStateAction);
         }
 
-        private static MotionFrame MakeFrame(ARHumanBody body)
+        private MotionFrame MakeFrame(ARHumanBody body)
         {
             var joints = body.joints;
             var rawPositions = new Vector3[joints.Length];
@@ -451,6 +459,8 @@ namespace Odoro
                 rotations[OdoroSkeletonDefinition.IndexOf(OdoroJointName.RightAnkle)] = new MotionJointRotation(rawRotations[ArKitRightFoot]);
             }
 
+            debugLines = BuildDebugLines(joints, rawPositions, positions);
+
             return new MotionFrame
             {
                 time = Time.unscaledTime,
@@ -486,6 +496,72 @@ namespace Odoro
         private static bool ContainsJoint(Array joints, int index)
         {
             return joints != null && index >= 0 && index < joints.Length;
+        }
+
+        private static bool ContainsJoint(NativeArray<XRHumanBodyJoint> joints, int index)
+        {
+            return joints.IsCreated && index >= 0 && index < joints.Length;
+        }
+
+        private static string[] BuildDebugLines(
+            NativeArray<XRHumanBodyJoint> joints,
+            Vector3[] rawPositions,
+            Vector3[] canonicalPositions
+        )
+        {
+            return new[]
+            {
+                $"ARKit joints: {joints.Length}",
+                $"AR parents L arm: {ParentLabel(joints, ArKitLeftShoulder)}/{ParentLabel(joints, ArKitLeftUpperArm)}/{ParentLabel(joints, ArKitLeftForearm)}/{ParentLabel(joints, ArKitLeftHand)}",
+                $"AR parents R arm: {ParentLabel(joints, ArKitRightShoulder)}/{ParentLabel(joints, ArKitRightUpperArm)}/{ParentLabel(joints, ArKitRightForearm)}/{ParentLabel(joints, ArKitRightHand)}",
+                $"AR raw shoulder L19 {PositionLabel(rawPositions, ArKitLeftShoulder)} R63 {PositionLabel(rawPositions, ArKitRightShoulder)}",
+                $"AR raw upper L19->20 {DeltaLabel(rawPositions, ArKitLeftShoulder, ArKitLeftUpperArm)} R63->64 {DeltaLabel(rawPositions, ArKitRightShoulder, ArKitRightUpperArm)}",
+                $"AR raw forearm L21->22 {DeltaLabel(rawPositions, ArKitLeftForearm, ArKitLeftHand)} R65->66 {DeltaLabel(rawPositions, ArKitRightForearm, ArKitRightHand)}",
+                $"Canon shoulder L {PositionLabel(canonicalPositions, OdoroJointName.LeftShoulder)} R {PositionLabel(canonicalPositions, OdoroJointName.RightShoulder)}",
+                $"Canon upper L {DeltaLabel(canonicalPositions, OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm)} R {DeltaLabel(canonicalPositions, OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm)}",
+                $"Canon hip width {DeltaLabel(canonicalPositions, OdoroJointName.LeftHip, OdoroJointName.RightHip)} shoulder width {DeltaLabel(canonicalPositions, OdoroJointName.LeftShoulder, OdoroJointName.RightShoulder)}",
+            };
+        }
+
+        private static string ParentLabel(NativeArray<XRHumanBodyJoint> joints, int index)
+        {
+            return ContainsJoint(joints, index) ? $"{index}<-{joints[index].parentIndex}" : $"{index}<---";
+        }
+
+        private static string PositionLabel(Vector3[] positions, OdoroJointName jointName)
+        {
+            return PositionLabel(positions, OdoroSkeletonDefinition.IndexOf(jointName));
+        }
+
+        private static string PositionLabel(Vector3[] positions, int index)
+        {
+            if (!ContainsJoint(positions, index))
+            {
+                return "--";
+            }
+
+            var position = positions[index];
+            return $"({position.x:0.00},{position.y:0.00},{position.z:0.00})";
+        }
+
+        private static string DeltaLabel(Vector3[] positions, OdoroJointName startJoint, OdoroJointName endJoint)
+        {
+            return DeltaLabel(
+                positions,
+                OdoroSkeletonDefinition.IndexOf(startJoint),
+                OdoroSkeletonDefinition.IndexOf(endJoint)
+            );
+        }
+
+        private static string DeltaLabel(Vector3[] positions, int startIndex, int endIndex)
+        {
+            if (!ContainsJoint(positions, startIndex) || !ContainsJoint(positions, endIndex))
+            {
+                return "--";
+            }
+
+            var delta = positions[endIndex] - positions[startIndex];
+            return $"d({delta.x:0.00},{delta.y:0.00},{delta.z:0.00})";
         }
     }
 }

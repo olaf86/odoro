@@ -11,6 +11,7 @@ namespace Odoro
         private const float DebugFrameCaptureDuration = 10f;
 
         private MotionArchiveStore archiveStore;
+        private AvatarAssetStore avatarAssetStore;
         private IMotionSource motionSource;
         private MotionStudioInteractor interactor;
         private SkeletonView skeletonView;
@@ -24,6 +25,8 @@ namespace Odoro
         private MotionTakeSummary selectedTake;
         private StudioScreen screen = StudioScreen.Capture;
         private List<MotionTakeSummary> libraryClips = new List<MotionTakeSummary>();
+        private List<StageAvatarOption> avatarOptions = new List<StageAvatarOption>();
+        private StageAvatarOption selectedAvatarOption;
         private string currentSessionId;
         private string transientMessage;
         private float transientMessageExpiresAt;
@@ -43,6 +46,10 @@ namespace Odoro
         private string debugLastSavedPath;
         private string debugReplayPath;
         private string debugLastShareStatus;
+        private bool debugAvatarArmSwapEnabled;
+        private bool avatarImportInProgress;
+        private bool avatarDownloadInProgress;
+        private bool selectedClipIsGeneratedMockStageClip;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -62,6 +69,7 @@ namespace Odoro
 
             recordingContext = MotionRecordingContext.DefaultMetronomeLoop.NormalizedForFixedCaptureLength();
             archiveStore = new MotionArchiveStore();
+            avatarAssetStore = new AvatarAssetStore();
             motionSource = CreateMotionSource();
             interactor = new MotionStudioInteractor(
                 motionSource,
@@ -69,10 +77,12 @@ namespace Odoro
                 new StudioPlaybackCapturedClipPreparer(motionSource.CaptureMode)
             );
             skeletonView = new SkeletonView("Odoro Skeleton View");
-            avatarView = HumanoidAvatarView.TryCreateFromResources();
+            RefreshAvatarLibrary();
+            SelectInitialAvatar();
 
             ConfigureCamera();
             ConfigureInteractor();
+            EnsureMockStagePlaybackClip();
             LoadRecordedReplayClip();
             ConfigureUi();
             RefreshLibrary();
@@ -111,7 +121,7 @@ namespace Odoro
                 }
 
                 var sampledFrame = selectedClip.Sample(playbackTime);
-                if (avatarView != null && avatarView.IsAvailable)
+                if (ShouldShowAvatar())
                 {
                     avatarView.SetFrame(sampledFrame);
                     skeletonView.SetFrame(null, Palette.StageSkeleton);
@@ -219,6 +229,7 @@ namespace Odoro
                 if (clip == null)
                 {
                     selectedTake = null;
+                    selectedClipIsGeneratedMockStageClip = false;
                 }
 
                 RefreshUi();
@@ -252,6 +263,7 @@ namespace Odoro
                 toggleSkeleton = ToggleCaptureSkeleton,
                 togglePlayback = TogglePlayback,
                 showModelInfo = ShowModelInfo,
+                showModelSelection = ShowModelSelection,
                 saveTake = SaveTakeReminder,
                 decreaseBpm = () => AdjustBpm(-5f),
                 increaseBpm = () => AdjustBpm(5f),
@@ -262,11 +274,13 @@ namespace Odoro
                 decreaseCountInBars = () => AdjustCountInBars(-1),
                 increaseCountInBars = () => AdjustCountInBars(1),
                 openTake = LoadTake,
+                selectAvatarOption = SelectAvatarOption,
                 showDebugHud = ShowDebugHud,
                 hideDebugHud = HideDebugHud,
                 startDebugFrameCapture = StartDebugFrameCapture,
                 stopDebugFrameCapture = () => StopDebugFrameCapture(true),
                 shareDebugMotionFrames = ShareDebugMotionFrames,
+                toggleDebugAvatarArmSwap = ToggleDebugAvatarArmSwap,
             });
         }
 
@@ -276,6 +290,7 @@ namespace Odoro
 
             try
             {
+                selectedClipIsGeneratedMockStageClip = false;
                 selectedTake = archiveStore.SaveTake(
                     interactor.SourceClip ?? clip,
                     motionSource.CaptureMode,
@@ -343,14 +358,18 @@ namespace Odoro
                     isPlaying = interactor.State.isPlaying,
                     title = selectedTake != null ? selectedTake.DisplayName : StudioL10n.StageTitleFallback,
                     summary = selectedClip != null ? StudioL10n.ClipSummary(selectedClip.Duration, selectedClip.FrameCount) : StudioL10n.StageNoClip,
-                    modeLabel = avatarView != null && avatarView.IsAvailable ? StudioL10n.AvatarLabel : StudioL10n.SkeletonLabel,
-                    hint = avatarView != null && avatarView.IsAvailable
-                        ? StudioL10n.StageHintAvatarActive
-                        : StudioL10n.StageHintAvatarMissing,
+                    modeLabel = StageModeLabel(),
+                    hint = StageHintLabel(),
                 },
                 library = new LibraryScreenSnapshot
                 {
                     clips = libraryClips,
+                },
+                modelSelection = new ModelSelectionScreenSnapshot
+                {
+                    options = BuildAvatarOptionSnapshots(),
+                    selectedOptionId = selectedAvatarOption?.id,
+                    isBusy = avatarImportInProgress || avatarDownloadInProgress,
                 },
                 debug = BuildDebugHudSnapshot(),
             });
@@ -384,6 +403,8 @@ namespace Odoro
 
         private void ShowStage()
         {
+            EnsureMockStagePlaybackClip();
+
             if (selectedClip == null)
             {
                 ShowTransientMessage(StudioL10n.ToastNeedCaptureFirst);
@@ -394,13 +415,199 @@ namespace Odoro
             RefreshUi();
         }
 
+        private void EnsureMockStagePlaybackClip()
+        {
+            if (motionSource?.CaptureMode != CaptureMode.Mock || selectedClipIsGeneratedMockStageClip)
+            {
+                return;
+            }
+
+            var sourceClip = MockMotionSource.CreateClip(
+                recordingContext.FixedCaptureDuration,
+                MotionSourceActivity.Recording
+            );
+            var playbackClip = MotionPlaybackClipPreparer.Prepare(sourceClip, CaptureMode.Mock);
+            selectedTake = null;
+            currentSessionId = null;
+            selectedClipIsGeneratedMockStageClip = true;
+            interactor.ReplaceCurrentClip(playbackClip, sourceClip);
+        }
+
         private void ShowModelInfo()
         {
             ShowTransientMessage(
-                avatarView != null && avatarView.IsAvailable
-                    ? StudioL10n.ToastAvatarActive
-                    : StudioL10n.ToastAvatarMissing
+                ShouldShowAvatar()
+                    ? StudioL10n.ToastAvatarLoaded(selectedAvatarOption?.title ?? avatarView.DisplayName)
+                    : selectedAvatarOption?.title ?? StudioL10n.ToastAvatarMissing
             );
+        }
+
+        private void ShowModelSelection()
+        {
+            RefreshAvatarLibrary();
+            screen = StudioScreen.ModelSelection;
+            RefreshUi();
+        }
+
+        private void RefreshAvatarLibrary()
+        {
+            avatarOptions = new List<StageAvatarOption>(avatarAssetStore.FetchAvailableOptions());
+            if (selectedAvatarOption == null)
+            {
+                return;
+            }
+
+            var matchingOption = FindAvatarOption(selectedAvatarOption.id);
+            if (matchingOption != null)
+            {
+                selectedAvatarOption = matchingOption;
+            }
+        }
+
+        private void SelectInitialAvatar()
+        {
+            var storedSelection = PlayerPrefs.GetString("Odoro.SelectedAvatarOption", string.Empty);
+            var option = FindAvatarOption(storedSelection) ?? FirstAvatarOption() ?? FirstSkeletonOption();
+            ApplyAvatarOption(option, false);
+        }
+
+        private StageAvatarOption FirstAvatarOption()
+        {
+            for (var optionIndex = 0; optionIndex < avatarOptions.Count; optionIndex += 1)
+            {
+                if (avatarOptions[optionIndex].UsesAvatar)
+                {
+                    return avatarOptions[optionIndex];
+                }
+            }
+
+            return null;
+        }
+
+        private StageAvatarOption FirstSkeletonOption()
+        {
+            return avatarOptions.Count > 0 ? avatarOptions[0] : null;
+        }
+
+        private StageAvatarOption FindAvatarOption(string optionId)
+        {
+            if (string.IsNullOrEmpty(optionId))
+            {
+                return null;
+            }
+
+            for (var optionIndex = 0; optionIndex < avatarOptions.Count; optionIndex += 1)
+            {
+                if (avatarOptions[optionIndex].id == optionId)
+                {
+                    return avatarOptions[optionIndex];
+                }
+            }
+
+            return null;
+        }
+
+        private void SelectAvatarOption(string optionId)
+        {
+            var option = FindAvatarOption(optionId);
+            if (option == null || avatarImportInProgress || avatarDownloadInProgress)
+            {
+                return;
+            }
+
+            if (option.RequiresDownload)
+            {
+                DownloadAvatarOption(option);
+                return;
+            }
+
+            ApplyAvatarOption(option, true);
+        }
+
+        private async void DownloadAvatarOption(StageAvatarOption option)
+        {
+            try
+            {
+                avatarDownloadInProgress = true;
+                ShowTransientMessage(StudioL10n.ToastAvatarDownloading(option.title));
+                var installedOption = await avatarAssetStore.InstallDownloadableAvatarAsync(option);
+                RefreshAvatarLibrary();
+                ApplyAvatarOption(FindAvatarOption(installedOption.id) ?? installedOption, true);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                ShowTransientMessage(StudioL10n.ToastAvatarImportFailed(exception.Message));
+            }
+            finally
+            {
+                avatarDownloadInProgress = false;
+                RefreshUi();
+            }
+        }
+
+        private async void ApplyAvatarOption(StageAvatarOption option, bool showResult)
+        {
+            if (option == null)
+            {
+                return;
+            }
+
+            selectedAvatarOption = option;
+            PlayerPrefs.SetString("Odoro.SelectedAvatarOption", option.id);
+            PlayerPrefs.Save();
+
+            avatarView?.Dispose();
+            avatarView = null;
+
+            if (option.kind == StageAvatarOptionKind.ProceduralSkeleton)
+            {
+                if (showResult)
+                {
+                    ShowTransientMessage(option.title);
+                }
+
+                RefreshUi();
+                return;
+            }
+
+            try
+            {
+                avatarImportInProgress = true;
+                ShowTransientMessage(StudioL10n.ToastAvatarLoading);
+
+                avatarView = option.kind switch
+                {
+                    StageAvatarOptionKind.ResourcesPrefab => HumanoidAvatarView.TryCreateFromResources(option.resourcePath),
+                    StageAvatarOptionKind.LocalDevelopmentGlb => await GltfAvatarLoader.LoadAsync(option.runtimeAssetPath, option.title),
+                    StageAvatarOptionKind.DownloadableGlb => await GltfAvatarLoader.LoadAsync(option.runtimeAssetPath, option.title),
+                    _ => null,
+                };
+
+                if (avatarView == null)
+                {
+                    throw new InvalidOperationException("No supported avatar rig was found.");
+                }
+
+                avatarView.SetDebugSwapArmJoints(debugAvatarArmSwapEnabled);
+
+                if (showResult)
+                {
+                    ShowTransientMessage(StudioL10n.ToastAvatarLoaded(option.title));
+                }
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                selectedAvatarOption = FirstSkeletonOption();
+                PlayerPrefs.SetString("Odoro.SelectedAvatarOption", selectedAvatarOption?.id ?? string.Empty);
+                ShowTransientMessage(StudioL10n.ToastAvatarImportFailed(exception.Message));
+            }
+            finally
+            {
+                avatarImportInProgress = false;
+                RefreshUi();
+            }
         }
 
         private void SaveTakeReminder()
@@ -451,12 +658,18 @@ namespace Odoro
 
         private void LoadTake(MotionTakeSummary take)
         {
+            selectedClipIsGeneratedMockStageClip = false;
             selectedTake = take;
             currentSessionId = take.sessionId;
             var storedTake = archiveStore.LoadStoredTake(take.id);
             selectedClip = storedTake.clip;
             playbackTime = 0f;
             interactor.ReplaceCurrentClip(storedTake.clip, storedTake.sourceClip);
+            if (take.captureMode == CaptureMode.Mock)
+            {
+                EnsureMockStagePlaybackClip();
+            }
+
             interactor.SetPlaybackActive(false);
             screen = StudioScreen.Stage;
             ShowTransientMessage(StudioL10n.ToastStoredTakeLoaded);
@@ -465,6 +678,8 @@ namespace Odoro
 
         private void TogglePlayback()
         {
+            EnsureMockStagePlaybackClip();
+
             if (selectedClip == null)
             {
                 return;
@@ -532,6 +747,66 @@ namespace Odoro
         private string CaptureModeLabel()
         {
             return StudioL10n.CaptureModeTitle(motionSource.CaptureMode);
+        }
+
+        private string StageModeLabel()
+        {
+            if (avatarImportInProgress)
+            {
+                return StudioL10n.ToastAvatarLoading;
+            }
+
+            if (avatarDownloadInProgress)
+            {
+                return StudioL10n.ToastAvatarDownloading(selectedAvatarOption?.title ?? StudioL10n.AvatarLabel);
+            }
+
+            if (ShouldShowAvatar())
+            {
+                return selectedAvatarOption?.title ?? StudioL10n.AvatarLabel;
+            }
+
+            return StudioL10n.SkeletonLabel;
+        }
+
+        private string StageHintLabel()
+        {
+            if (selectedAvatarOption == null || selectedAvatarOption.kind == StageAvatarOptionKind.ProceduralSkeleton)
+            {
+                return StudioL10n.ModelSkeletonPreview;
+            }
+
+            return ShouldShowAvatar()
+                ? StudioL10n.StageHintAvatarActive
+                : StudioL10n.StageHintAvatarMissing;
+        }
+
+        private bool ShouldShowAvatar()
+        {
+            return selectedAvatarOption != null
+                && selectedAvatarOption.UsesAvatar
+                && avatarView != null
+                && avatarView.IsAvailable;
+        }
+
+        private IReadOnlyList<StageAvatarOptionSnapshot> BuildAvatarOptionSnapshots()
+        {
+            var snapshots = new List<StageAvatarOptionSnapshot>();
+            for (var optionIndex = 0; optionIndex < avatarOptions.Count; optionIndex += 1)
+            {
+                var option = avatarOptions[optionIndex];
+                snapshots.Add(new StageAvatarOptionSnapshot
+                {
+                    id = option.id,
+                    title = option.title,
+                    subtitle = option.subtitle,
+                    isSelected = selectedAvatarOption != null && selectedAvatarOption.id == option.id,
+                    usesAvatar = option.UsesAvatar,
+                    requiresDownload = option.RequiresDownload,
+                });
+            }
+
+            return snapshots;
         }
 
         private string CaptureMetricsLabel()
@@ -632,15 +907,37 @@ namespace Odoro
             {
                 $"Source: {motionSource?.GetType().Name ?? "--"} ({motionSource?.CaptureMode.ToString() ?? "--"})",
                 $"Status: {interactor?.State.statusText ?? "--"}",
+                MotionSourceDebugSummary(),
                 $"Motion FPS: {liveMotionFps:0.0}",
                 $"Frame age: {DebugFrameAgeLabel()}",
                 $"Joint count: {latestPreviewFrame?.jointPositions?.Length ?? 0}",
+                CanonicalDeltaLabel("Canon hip L->R", OdoroJointName.LeftHip, OdoroJointName.RightHip),
+                CanonicalDeltaLabel("Canon shoulder L->R", OdoroJointName.LeftShoulder, OdoroJointName.RightShoulder),
+                CanonicalDeltaLabel("Canon upper L", OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm),
+                CanonicalDeltaLabel("Canon upper R", OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm),
+                CanonicalDeltaLabel("Canon lower L", OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow),
+                CanonicalDeltaLabel("Canon lower R", OdoroJointName.RightUpperArm, OdoroJointName.RightElbow),
+            };
+
+            if (motionSource is IMotionSourceDebugInfo debugInfo && debugInfo.DebugLines != null)
+            {
+                lines.AddRange(debugInfo.DebugLines);
+            }
+
+            if (avatarView?.DebugLines != null)
+            {
+                lines.AddRange(avatarView.DebugLines);
+            }
+
+            lines.AddRange(new[]
+            {
                 DebugJointLabel(OdoroJointName.Root),
                 DebugJointLabel(OdoroJointName.Head),
                 DebugJointLabel(OdoroJointName.LeftWrist),
                 DebugJointLabel(OdoroJointName.RightWrist),
                 $"Replay file: {(HasProjectReplayFile() ? "found" : "missing")}",
-            };
+                $"Avatar arm swap: {(debugAvatarArmSwapEnabled ? "on" : "off")}",
+            });
 
             if (!string.IsNullOrEmpty(debugReplayPath))
             {
@@ -670,7 +967,20 @@ namespace Odoro
                 canShare = DebugFileSharer.IsAvailable && HasShareableDebugMotionFile(),
                 lines = lines.ToArray(),
                 captureButtonLabel = debugFrameCaptureActive ? "Stop & Save MotionFrames" : "Save Next 10s MotionFrames",
+                avatarArmSwapEnabled = debugAvatarArmSwapEnabled,
+                avatarArmSwapButtonLabel = debugAvatarArmSwapEnabled ? "Avatar Arms: Swapped" : "Avatar Arms: Normal",
             };
+        }
+
+        private string MotionSourceDebugSummary()
+        {
+            if (motionSource is IMotionSourceDebugInfo debugInfo)
+            {
+                var debugLineCount = debugInfo.DebugLines?.Length ?? 0;
+                return $"Source debug: available ({debugLineCount} lines)";
+            }
+
+            return $"Source debug: unavailable for {motionSource?.GetType().Name ?? "--"}";
         }
 
         private void ShowDebugHud()
@@ -682,6 +992,14 @@ namespace Odoro
         private void HideDebugHud()
         {
             debugHudVisible = false;
+            RefreshUi();
+        }
+
+        private void ToggleDebugAvatarArmSwap()
+        {
+            debugAvatarArmSwapEnabled = !debugAvatarArmSwapEnabled;
+            avatarView?.SetDebugSwapArmJoints(debugAvatarArmSwapEnabled);
+            ShowTransientMessage(debugAvatarArmSwapEnabled ? "Avatar arm swap enabled." : "Avatar arm swap disabled.");
             RefreshUi();
         }
 
@@ -803,6 +1121,24 @@ namespace Odoro
 
             var position = positions[index];
             return $"{jointName}: ({position.x:0.00}, {position.y:0.00}, {position.z:0.00})";
+        }
+
+        private string CanonicalDeltaLabel(string label, OdoroJointName startJoint, OdoroJointName endJoint)
+        {
+            var positions = latestPreviewFrame?.jointPositions;
+            var startIndex = OdoroSkeletonDefinition.IndexOf(startJoint);
+            var endIndex = OdoroSkeletonDefinition.IndexOf(endJoint);
+            if (positions == null
+                || startIndex < 0
+                || endIndex < 0
+                || startIndex >= positions.Length
+                || endIndex >= positions.Length)
+            {
+                return $"{label}: --";
+            }
+
+            var delta = positions[endIndex] - positions[startIndex];
+            return $"{label}: d({delta.x:0.00}, {delta.y:0.00}, {delta.z:0.00})";
         }
     }
 }

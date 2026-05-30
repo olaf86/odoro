@@ -307,6 +307,46 @@ MonoBehaviour:
     m_Key: tracking.searching
     m_Metadata:
       m_Items: []
+  - m_Id: 4081613024518144
+    m_Key: model-selection.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712448
+    m_Key: model-selection.subtitle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712449
+    m_Key: model-selection.selected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712450
+    m_Key: model-selection.tap-to-use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712451
+    m_Key: model-selection.skeleton-preview
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712454
+    m_Key: toast.avatar-loading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712455
+    m_Key: toast.avatar-loaded
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712456
+    m_Key: toast.avatar-import-failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4085605246951424
+    m_Key: model-selection.tap-to-download
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4085605251145728
+    m_Key: toast.avatar-downloading
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

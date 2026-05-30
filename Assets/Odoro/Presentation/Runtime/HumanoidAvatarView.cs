@@ -9,6 +9,7 @@ namespace Odoro
         private sealed class BoneBinding
         {
             public Transform bone;
+            public Transform child;
             public OdoroJointName startJoint;
             public OdoroJointName endJoint;
             public Quaternion restLocalRotation;
@@ -20,6 +21,7 @@ namespace Odoro
         private readonly List<BoneBinding> bindings = new List<BoneBinding>();
         private readonly Vector3 rootToHipsOffset;
         private readonly string displayName;
+        private string[] debugLines = Array.Empty<string>();
         private bool debugSwapArmJoints;
 
         private HumanoidAvatarView(
@@ -42,6 +44,8 @@ namespace Odoro
         public string DisplayName => displayName;
 
         public int BindingCount => bindings.Count;
+
+        public string[] DebugLines => debugLines;
 
         public void SetDebugSwapArmJoints(bool isEnabled)
         {
@@ -129,12 +133,14 @@ namespace Odoro
             if (!IsAvailable || frame == null || frame.jointPositions == null)
             {
                 SetVisible(false);
+                debugLines = Array.Empty<string>();
                 return;
             }
 
             if (frame.jointPositions.Length < OdoroSkeletonDefinition.JointCount)
             {
                 SetVisible(false);
+                debugLines = Array.Empty<string>();
                 return;
             }
 
@@ -180,6 +186,8 @@ namespace Odoro
                     Quaternion.FromToRotation(binding.restLocalDirection, desiredLocalDirection.normalized)
                     * binding.restLocalRotation;
             }
+
+            debugLines = BuildDebugLines(frame);
         }
 
         public void Dispose()
@@ -330,6 +338,7 @@ namespace Odoro
             bindings.Add(new BoneBinding
             {
                 bone = bone,
+                child = child,
                 startJoint = startJoint,
                 endJoint = endJoint,
                 restLocalRotation = bone.localRotation,
@@ -405,6 +414,107 @@ namespace Odoro
             }
 
             return transform.GetChild(0);
+        }
+
+        private string[] BuildDebugLines(MotionFrame frame)
+        {
+            var lines = new List<string>
+            {
+                $"Avatar debug: {displayName} ({bindings.Count} bindings)",
+            };
+
+            AddBindingDebugLine(lines, frame, "Av L shoulder", OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm);
+            AddBindingDebugLine(lines, frame, "Av L upper", OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow);
+            AddBindingDebugLine(lines, frame, "Av L lower", OdoroJointName.LeftElbow, OdoroJointName.LeftWrist);
+            AddBindingDebugLine(lines, frame, "Av R shoulder", OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm);
+            AddBindingDebugLine(lines, frame, "Av R upper", OdoroJointName.RightUpperArm, OdoroJointName.RightElbow);
+            AddBindingDebugLine(lines, frame, "Av R lower", OdoroJointName.RightElbow, OdoroJointName.RightWrist);
+            return lines.ToArray();
+        }
+
+        private void AddBindingDebugLine(
+            List<string> lines,
+            MotionFrame frame,
+            string label,
+            OdoroJointName startJoint,
+            OdoroJointName endJoint
+        )
+        {
+            var binding = FindBinding(startJoint, endJoint);
+            if (binding == null)
+            {
+                lines.Add($"{label}: missing");
+                return;
+            }
+
+            var actualDirection = ActualWorldDirection(binding);
+            if (actualDirection.sqrMagnitude < 0.0001f)
+            {
+                lines.Add($"{label}: no actual dir");
+                return;
+            }
+
+            var targetStartJoint = debugSwapArmJoints ? DebugArmSwapJoint(startJoint) : startJoint;
+            var targetEndJoint = debugSwapArmJoints ? DebugArmSwapJoint(endJoint) : endJoint;
+            var targetDirection = TargetWorldDirection(frame, targetStartJoint, targetEndJoint);
+            if (targetDirection.sqrMagnitude < 0.0001f)
+            {
+                lines.Add($"{label}: no target dir");
+                return;
+            }
+
+            var actual = actualDirection.normalized;
+            var target = targetDirection.normalized;
+            var dot = Vector3.Dot(actual, target);
+            lines.Add($"{label}: dot {dot:0.00} act {VectorLabel(actual)} tgt {VectorLabel(target)}");
+        }
+
+        private BoneBinding FindBinding(OdoroJointName startJoint, OdoroJointName endJoint)
+        {
+            for (var bindingIndex = 0; bindingIndex < bindings.Count; bindingIndex += 1)
+            {
+                var binding = bindings[bindingIndex];
+                if (binding.startJoint == startJoint && binding.endJoint == endJoint)
+                {
+                    return binding;
+                }
+            }
+
+            return null;
+        }
+
+        private static Vector3 ActualWorldDirection(BoneBinding binding)
+        {
+            if (binding.child != null)
+            {
+                return binding.child.position - binding.bone.position;
+            }
+
+            var parent = binding.bone.parent;
+            return parent == null
+                ? binding.bone.TransformDirection(binding.restLocalDirection)
+                : parent.TransformDirection(binding.restLocalDirection);
+        }
+
+        private static Vector3 TargetWorldDirection(MotionFrame frame, OdoroJointName startJoint, OdoroJointName endJoint)
+        {
+            var startIndex = OdoroSkeletonDefinition.IndexOf(startJoint);
+            var endIndex = OdoroSkeletonDefinition.IndexOf(endJoint);
+            if (frame.jointPositions == null
+                || startIndex < 0
+                || endIndex < 0
+                || startIndex >= frame.jointPositions.Length
+                || endIndex >= frame.jointPositions.Length)
+            {
+                return Vector3.zero;
+            }
+
+            return frame.jointPositions[endIndex] - frame.jointPositions[startIndex];
+        }
+
+        private static string VectorLabel(Vector3 vector)
+        {
+            return $"({vector.x:0.00},{vector.y:0.00},{vector.z:0.00})";
         }
 
         private static OdoroJointName DebugArmSwapJoint(OdoroJointName jointName)

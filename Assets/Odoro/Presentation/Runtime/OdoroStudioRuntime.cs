@@ -49,6 +49,7 @@ namespace Odoro
         private bool debugAvatarArmSwapEnabled;
         private bool avatarImportInProgress;
         private bool avatarDownloadInProgress;
+        private bool selectedClipIsGeneratedMockStageClip;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -81,6 +82,7 @@ namespace Odoro
 
             ConfigureCamera();
             ConfigureInteractor();
+            EnsureMockStagePlaybackClip();
             LoadRecordedReplayClip();
             ConfigureUi();
             RefreshLibrary();
@@ -227,6 +229,7 @@ namespace Odoro
                 if (clip == null)
                 {
                     selectedTake = null;
+                    selectedClipIsGeneratedMockStageClip = false;
                 }
 
                 RefreshUi();
@@ -287,6 +290,7 @@ namespace Odoro
 
             try
             {
+                selectedClipIsGeneratedMockStageClip = false;
                 selectedTake = archiveStore.SaveTake(
                     interactor.SourceClip ?? clip,
                     motionSource.CaptureMode,
@@ -399,6 +403,8 @@ namespace Odoro
 
         private void ShowStage()
         {
+            EnsureMockStagePlaybackClip();
+
             if (selectedClip == null)
             {
                 ShowTransientMessage(StudioL10n.ToastNeedCaptureFirst);
@@ -407,6 +413,24 @@ namespace Odoro
 
             screen = StudioScreen.Stage;
             RefreshUi();
+        }
+
+        private void EnsureMockStagePlaybackClip()
+        {
+            if (motionSource?.CaptureMode != CaptureMode.Mock || selectedClipIsGeneratedMockStageClip)
+            {
+                return;
+            }
+
+            var sourceClip = MockMotionSource.CreateClip(
+                recordingContext.FixedCaptureDuration,
+                MotionSourceActivity.Recording
+            );
+            var playbackClip = MotionPlaybackClipPreparer.Prepare(sourceClip, CaptureMode.Mock);
+            selectedTake = null;
+            currentSessionId = null;
+            selectedClipIsGeneratedMockStageClip = true;
+            interactor.ReplaceCurrentClip(playbackClip, sourceClip);
         }
 
         private void ShowModelInfo()
@@ -634,12 +658,18 @@ namespace Odoro
 
         private void LoadTake(MotionTakeSummary take)
         {
+            selectedClipIsGeneratedMockStageClip = false;
             selectedTake = take;
             currentSessionId = take.sessionId;
             var storedTake = archiveStore.LoadStoredTake(take.id);
             selectedClip = storedTake.clip;
             playbackTime = 0f;
             interactor.ReplaceCurrentClip(storedTake.clip, storedTake.sourceClip);
+            if (take.captureMode == CaptureMode.Mock)
+            {
+                EnsureMockStagePlaybackClip();
+            }
+
             interactor.SetPlaybackActive(false);
             screen = StudioScreen.Stage;
             ShowTransientMessage(StudioL10n.ToastStoredTakeLoaded);
@@ -648,6 +678,8 @@ namespace Odoro
 
         private void TogglePlayback()
         {
+            EnsureMockStagePlaybackClip();
+
             if (selectedClip == null)
             {
                 return;
@@ -875,16 +907,37 @@ namespace Odoro
             {
                 $"Source: {motionSource?.GetType().Name ?? "--"} ({motionSource?.CaptureMode.ToString() ?? "--"})",
                 $"Status: {interactor?.State.statusText ?? "--"}",
+                MotionSourceDebugSummary(),
                 $"Motion FPS: {liveMotionFps:0.0}",
                 $"Frame age: {DebugFrameAgeLabel()}",
                 $"Joint count: {latestPreviewFrame?.jointPositions?.Length ?? 0}",
+                CanonicalDeltaLabel("Canon hip L->R", OdoroJointName.LeftHip, OdoroJointName.RightHip),
+                CanonicalDeltaLabel("Canon shoulder L->R", OdoroJointName.LeftShoulder, OdoroJointName.RightShoulder),
+                CanonicalDeltaLabel("Canon upper L", OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm),
+                CanonicalDeltaLabel("Canon upper R", OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm),
+                CanonicalDeltaLabel("Canon lower L", OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow),
+                CanonicalDeltaLabel("Canon lower R", OdoroJointName.RightUpperArm, OdoroJointName.RightElbow),
+            };
+
+            if (motionSource is IMotionSourceDebugInfo debugInfo && debugInfo.DebugLines != null)
+            {
+                lines.AddRange(debugInfo.DebugLines);
+            }
+
+            if (avatarView?.DebugLines != null)
+            {
+                lines.AddRange(avatarView.DebugLines);
+            }
+
+            lines.AddRange(new[]
+            {
                 DebugJointLabel(OdoroJointName.Root),
                 DebugJointLabel(OdoroJointName.Head),
                 DebugJointLabel(OdoroJointName.LeftWrist),
                 DebugJointLabel(OdoroJointName.RightWrist),
                 $"Replay file: {(HasProjectReplayFile() ? "found" : "missing")}",
                 $"Avatar arm swap: {(debugAvatarArmSwapEnabled ? "on" : "off")}",
-            };
+            });
 
             if (!string.IsNullOrEmpty(debugReplayPath))
             {
@@ -917,6 +970,17 @@ namespace Odoro
                 avatarArmSwapEnabled = debugAvatarArmSwapEnabled,
                 avatarArmSwapButtonLabel = debugAvatarArmSwapEnabled ? "Avatar Arms: Swapped" : "Avatar Arms: Normal",
             };
+        }
+
+        private string MotionSourceDebugSummary()
+        {
+            if (motionSource is IMotionSourceDebugInfo debugInfo)
+            {
+                var debugLineCount = debugInfo.DebugLines?.Length ?? 0;
+                return $"Source debug: available ({debugLineCount} lines)";
+            }
+
+            return $"Source debug: unavailable for {motionSource?.GetType().Name ?? "--"}";
         }
 
         private void ShowDebugHud()
@@ -1057,6 +1121,24 @@ namespace Odoro
 
             var position = positions[index];
             return $"{jointName}: ({position.x:0.00}, {position.y:0.00}, {position.z:0.00})";
+        }
+
+        private string CanonicalDeltaLabel(string label, OdoroJointName startJoint, OdoroJointName endJoint)
+        {
+            var positions = latestPreviewFrame?.jointPositions;
+            var startIndex = OdoroSkeletonDefinition.IndexOf(startJoint);
+            var endIndex = OdoroSkeletonDefinition.IndexOf(endJoint);
+            if (positions == null
+                || startIndex < 0
+                || endIndex < 0
+                || startIndex >= positions.Length
+                || endIndex >= positions.Length)
+            {
+                return $"{label}: --";
+            }
+
+            var delta = positions[endIndex] - positions[startIndex];
+            return $"{label}: d({delta.x:0.00}, {delta.y:0.00}, {delta.z:0.00})";
         }
     }
 }

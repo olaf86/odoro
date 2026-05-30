@@ -14,6 +14,7 @@ namespace Odoro
             public OdoroJointName endJoint;
             public Quaternion restLocalRotation;
             public Vector3 restLocalDirection;
+            public bool mirrorArmTargetJoints;
         }
 
         private readonly GameObject root;
@@ -87,6 +88,11 @@ namespace Odoro
             }
 
             var animator = instance.GetComponentInChildren<Animator>();
+            if (animator != null && animator.avatar != null && animator.isHuman)
+            {
+                AlignHumanoidFrontToStage(instance.transform, animator);
+            }
+
             var bindings = animator != null && animator.avatar != null && animator.isHuman
                 ? BuildHumanoidBindings(animator)
                 : BuildNamedTransformBindings(instance.transform);
@@ -156,8 +162,8 @@ namespace Odoro
                     continue;
                 }
 
-                var startJoint = debugSwapArmJoints ? DebugArmSwapJoint(binding.startJoint) : binding.startJoint;
-                var endJoint = debugSwapArmJoints ? DebugArmSwapJoint(binding.endJoint) : binding.endJoint;
+                var startJoint = ResolveTargetJoint(binding, binding.startJoint);
+                var endJoint = ResolveTargetJoint(binding, binding.endJoint);
                 var startIndex = OdoroSkeletonDefinition.IndexOf(startJoint);
                 var endIndex = OdoroSkeletonDefinition.IndexOf(endJoint);
                 if (startIndex < 0 || endIndex < 0)
@@ -205,26 +211,18 @@ namespace Odoro
             TryAddBinding(bindings, animator, HumanBodyBones.Hips, OdoroJointName.Root, OdoroJointName.Spine);
             TryAddBinding(bindings, animator, HumanBodyBones.Spine, OdoroJointName.Spine, OdoroJointName.Chest);
             TryAddBinding(bindings, animator, HumanBodyBones.Chest, OdoroJointName.Chest, OdoroJointName.Neck);
-            TryAddBinding(bindings, animator, HumanBodyBones.Neck, OdoroJointName.Neck, OdoroJointName.Head);
-            TryAddBinding(bindings, animator, HumanBodyBones.Head, OdoroJointName.Neck, OdoroJointName.Head);
 
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftShoulder, OdoroJointName.LeftShoulder, OdoroJointName.LeftUpperArm);
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftUpperArm, OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow);
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftLowerArm, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist);
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftHand, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist);
+            TryAddBinding(bindings, animator, HumanBodyBones.LeftUpperArm, OdoroJointName.LeftUpperArm, OdoroJointName.LeftElbow, true);
+            TryAddBinding(bindings, animator, HumanBodyBones.LeftLowerArm, OdoroJointName.LeftElbow, OdoroJointName.LeftWrist, true);
 
-            TryAddBinding(bindings, animator, HumanBodyBones.RightShoulder, OdoroJointName.RightShoulder, OdoroJointName.RightUpperArm);
-            TryAddBinding(bindings, animator, HumanBodyBones.RightUpperArm, OdoroJointName.RightUpperArm, OdoroJointName.RightElbow);
-            TryAddBinding(bindings, animator, HumanBodyBones.RightLowerArm, OdoroJointName.RightElbow, OdoroJointName.RightWrist);
-            TryAddBinding(bindings, animator, HumanBodyBones.RightHand, OdoroJointName.RightElbow, OdoroJointName.RightWrist);
+            TryAddBinding(bindings, animator, HumanBodyBones.RightUpperArm, OdoroJointName.RightUpperArm, OdoroJointName.RightElbow, true);
+            TryAddBinding(bindings, animator, HumanBodyBones.RightLowerArm, OdoroJointName.RightElbow, OdoroJointName.RightWrist, true);
 
             TryAddBinding(bindings, animator, HumanBodyBones.LeftUpperLeg, OdoroJointName.LeftHip, OdoroJointName.LeftKnee);
             TryAddBinding(bindings, animator, HumanBodyBones.LeftLowerLeg, OdoroJointName.LeftKnee, OdoroJointName.LeftAnkle);
-            TryAddBinding(bindings, animator, HumanBodyBones.LeftFoot, OdoroJointName.LeftAnkle, OdoroJointName.LeftFoot);
 
             TryAddBinding(bindings, animator, HumanBodyBones.RightUpperLeg, OdoroJointName.RightHip, OdoroJointName.RightKnee);
             TryAddBinding(bindings, animator, HumanBodyBones.RightLowerLeg, OdoroJointName.RightKnee, OdoroJointName.RightAnkle);
-            TryAddBinding(bindings, animator, HumanBodyBones.RightFoot, OdoroJointName.RightAnkle, OdoroJointName.RightFoot);
 
             return bindings;
         }
@@ -300,7 +298,8 @@ namespace Odoro
             Animator animator,
             HumanBodyBones humanBone,
             OdoroJointName startJoint,
-            OdoroJointName endJoint
+            OdoroJointName endJoint,
+            bool mirrorArmTargetJoints = false
         )
         {
             var bone = animator.GetBoneTransform(humanBone);
@@ -309,14 +308,15 @@ namespace Odoro
                 return;
             }
 
-            AddBinding(bindings, bone, startJoint, endJoint);
+            AddBinding(bindings, bone, startJoint, endJoint, mirrorArmTargetJoints);
         }
 
         private static void AddBinding(
             List<BoneBinding> bindings,
             Transform bone,
             OdoroJointName startJoint,
-            OdoroJointName endJoint
+            OdoroJointName endJoint,
+            bool mirrorArmTargetJoints = false
         )
         {
             var child = FirstChildBone(bone);
@@ -343,6 +343,7 @@ namespace Odoro
                 endJoint = endJoint,
                 restLocalRotation = bone.localRotation,
                 restLocalDirection = restLocalDirection.normalized,
+                mirrorArmTargetJoints = mirrorArmTargetJoints,
             });
         }
 
@@ -395,6 +396,43 @@ namespace Odoro
 
             var scale = 1.7f / bounds.size.y;
             instance.transform.localScale *= scale;
+        }
+
+        private static void AlignHumanoidFrontToStage(Transform root, Animator animator)
+        {
+            var currentForward = EstimateHumanoidForward(animator);
+            currentForward.y = 0f;
+            if (currentForward.sqrMagnitude < 0.0001f)
+            {
+                return;
+            }
+
+            var targetForward = Vector3.back;
+            var correction = Quaternion.FromToRotation(currentForward.normalized, targetForward);
+            root.rotation = correction * root.rotation;
+        }
+
+        private static Vector3 EstimateHumanoidForward(Animator animator)
+        {
+            var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            var head = animator.GetBoneTransform(HumanBodyBones.Head);
+            var leftShoulder = animator.GetBoneTransform(HumanBodyBones.LeftUpperArm)
+                ?? animator.GetBoneTransform(HumanBodyBones.LeftShoulder);
+            var rightShoulder = animator.GetBoneTransform(HumanBodyBones.RightUpperArm)
+                ?? animator.GetBoneTransform(HumanBodyBones.RightShoulder);
+            if (hips == null || head == null || leftShoulder == null || rightShoulder == null)
+            {
+                return animator.transform.forward;
+            }
+
+            var right = rightShoulder.position - leftShoulder.position;
+            var up = head.position - hips.position;
+            if (right.sqrMagnitude < 0.0001f || up.sqrMagnitude < 0.0001f)
+            {
+                return animator.transform.forward;
+            }
+
+            return Vector3.Cross(right.normalized, up.normalized);
         }
 
         private static Transform FirstChildBone(Transform transform)
@@ -454,8 +492,8 @@ namespace Odoro
                 return;
             }
 
-            var targetStartJoint = debugSwapArmJoints ? DebugArmSwapJoint(startJoint) : startJoint;
-            var targetEndJoint = debugSwapArmJoints ? DebugArmSwapJoint(endJoint) : endJoint;
+            var targetStartJoint = ResolveTargetJoint(binding, startJoint);
+            var targetEndJoint = ResolveTargetJoint(binding, endJoint);
             var targetDirection = TargetWorldDirection(frame, targetStartJoint, targetEndJoint);
             if (targetDirection.sqrMagnitude < 0.0001f)
             {
@@ -481,6 +519,12 @@ namespace Odoro
             }
 
             return null;
+        }
+
+        private OdoroJointName ResolveTargetJoint(BoneBinding binding, OdoroJointName jointName)
+        {
+            var shouldSwapArmJoint = binding.mirrorArmTargetJoints ^ debugSwapArmJoints;
+            return shouldSwapArmJoint ? DebugArmSwapJoint(jointName) : jointName;
         }
 
         private static Vector3 ActualWorldDirection(BoneBinding binding)

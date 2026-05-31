@@ -27,6 +27,8 @@ namespace Odoro
         public Action increaseCountInBars;
         public Action<MotionTakeSummary> openTake;
         public Action<string> selectAvatarOption;
+        public Action<string> installAvatarOption;
+        public Action<string> uninstallAvatarOption;
         public Action showDebugHud;
         public Action hideDebugHud;
         public Action startDebugFrameCapture;
@@ -96,6 +98,9 @@ namespace Odoro
         public string subtitle;
         public bool isSelected;
         public bool usesAvatar;
+        public bool isInstalled;
+        public bool canInstall;
+        public bool canUninstall;
     }
 
     public sealed class LibraryScreenSnapshot

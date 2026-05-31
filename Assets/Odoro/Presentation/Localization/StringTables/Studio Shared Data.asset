@@ -339,6 +339,30 @@ MonoBehaviour:
     m_Key: toast.avatar-import-failed
     m_Metadata:
       m_Items: []
+  - m_Id: 4081613028712457
+    m_Key: model-selection.not-installed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712458
+    m_Key: button.use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712459
+    m_Key: button.install
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712460
+    m_Key: button.uninstall
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712461
+    m_Key: toast.avatar-installed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712462
+    m_Key: toast.avatar-uninstalled
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

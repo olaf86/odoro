@@ -14,7 +14,7 @@ namespace Odoro
         private ButtonBinding backButton;
         private Label titleLabel;
         private Label subtitleLabel;
-        private readonly List<Button> optionButtons = new List<Button>();
+        private readonly List<VisualElement> optionCards = new List<VisualElement>();
 
         public ModelSelectionScreenView(VisualElement parent, OdoroStudioUiActions actions)
         {
@@ -32,7 +32,7 @@ namespace Odoro
         public void Render(ModelSelectionScreenSnapshot snapshot)
         {
             optionList.Clear();
-            optionButtons.Clear();
+            optionCards.Clear();
 
             if (snapshot.options == null)
             {
@@ -41,7 +41,7 @@ namespace Odoro
 
             foreach (var option in snapshot.options)
             {
-                optionList.Add(BuildOptionButton(option));
+                optionList.Add(BuildOptionCard(option));
             }
         }
 
@@ -68,43 +68,68 @@ namespace Odoro
             return header;
         }
 
-        private Button BuildOptionButton(StageAvatarOptionSnapshot option)
+        private VisualElement BuildOptionCard(StageAvatarOptionSnapshot option)
         {
-            var button = new Button(() => actions.selectAvatarOption?.Invoke(option.id));
-            button.focusable = false;
-            button.style.marginBottom = 10f;
-            button.style.paddingLeft = 14f;
-            button.style.paddingRight = 14f;
-            button.style.paddingTop = 12f;
-            button.style.paddingBottom = 12f;
-            button.style.backgroundColor = option.isSelected
+            var card = CreateCard();
+            card.style.marginBottom = 10f;
+            card.style.backgroundColor = option.isSelected
                 ? new Color(0.18f, 0.52f, 0.87f, 0.92f)
                 : new Color(0.11f, 0.14f, 0.19f, 0.95f);
-            button.style.borderTopLeftRadius = 18f;
-            button.style.borderTopRightRadius = 18f;
-            button.style.borderBottomLeftRadius = 18f;
-            button.style.borderBottomRightRadius = 18f;
+            if (option.usesAvatar && !option.isInstalled)
+            {
+                card.style.opacity = 0.76f;
+            }
 
             var title = CreateValueLabel(option.title);
             title.style.unityTextAlign = TextAnchor.MiddleLeft;
-            button.Add(title);
+            card.Add(title);
 
             var subtitle = CreateCaptionLabel(option.subtitle);
             subtitle.style.marginTop = 6f;
             subtitle.style.unityTextAlign = TextAnchor.MiddleLeft;
-            button.Add(subtitle);
+            card.Add(subtitle);
 
             var status = CreatePillLabel();
             status.text = option.isSelected
                 ? StudioL10n.ModelSelected
-                : option.usesAvatar
+                : option.usesAvatar && !option.isInstalled
+                    ? StudioL10n.ModelNotInstalled
+                    : option.usesAvatar
                     ? StudioL10n.ModelTapToUse
                     : StudioL10n.ModelSkeletonPreview;
             status.style.marginTop = 10f;
-            button.Add(status);
+            card.Add(status);
 
-            optionButtons.Add(button);
-            return button;
+            var actionsRow = CreateRow();
+            actionsRow.style.marginTop = 12f;
+            actionsRow.style.flexWrap = Wrap.Wrap;
+
+            if (option.canInstall)
+            {
+                var installButton = CreatePrimaryButton(StudioL10n.ButtonInstall, () => actions.installAvatarOption?.Invoke(option.id), 36f);
+                installButton.button.style.marginRight = 8f;
+                installButton.button.style.marginBottom = 8f;
+                actionsRow.Add(installButton.button);
+            }
+            else
+            {
+                var selectButton = CreateSecondaryButton(StudioL10n.ButtonUse, () => actions.selectAvatarOption?.Invoke(option.id), 36f);
+                selectButton.button.SetEnabled(!option.isSelected);
+                selectButton.button.style.marginRight = 8f;
+                selectButton.button.style.marginBottom = 8f;
+                actionsRow.Add(selectButton.button);
+            }
+
+            if (option.canUninstall)
+            {
+                var uninstallButton = CreateDangerButton(StudioL10n.ButtonUninstall, () => actions.uninstallAvatarOption?.Invoke(option.id), 36f);
+                uninstallButton.button.style.marginBottom = 8f;
+                actionsRow.Add(uninstallButton.button);
+            }
+
+            card.Add(actionsRow);
+            optionCards.Add(card);
+            return card;
         }
     }
 }

@@ -273,6 +273,8 @@ namespace Odoro
                 increaseCountInBars = () => AdjustCountInBars(1),
                 openTake = LoadTake,
                 selectAvatarOption = SelectAvatarOption,
+                installAvatarOption = InstallAvatarOption,
+                uninstallAvatarOption = UninstallAvatarOption,
                 showDebugHud = ShowDebugHud,
                 hideDebugHud = HideDebugHud,
                 startDebugFrameCapture = StartDebugFrameCapture,
@@ -457,16 +459,67 @@ namespace Odoro
             }
 
             var matchingOption = FindAvatarOption(selectedAvatarOption.id);
-            if (matchingOption != null)
+            if (matchingOption != null && matchingOption.isInstalled)
             {
                 selectedAvatarOption = matchingOption;
+                return;
             }
+
+            ApplyAvatarOption(FirstSkeletonOption(), false);
+        }
+
+        private void InstallAvatarOption(string optionId)
+        {
+            if (avatarImportInProgress)
+            {
+                return;
+            }
+
+            var option = FindAvatarOption(optionId);
+            if (option == null || !option.canInstall)
+            {
+                return;
+            }
+
+            avatarAssetStore.InstallAvatar(option.id);
+            RefreshAvatarLibrary();
+            ShowTransientMessage(StudioL10n.ToastAvatarInstalled(option.title));
+            RefreshUi();
+        }
+
+        private void UninstallAvatarOption(string optionId)
+        {
+            if (avatarImportInProgress)
+            {
+                return;
+            }
+
+            var option = FindAvatarOption(optionId);
+            if (option == null || !option.canUninstall)
+            {
+                return;
+            }
+
+            var wasSelected = selectedAvatarOption != null && selectedAvatarOption.id == option.id;
+            avatarAssetStore.UninstallAvatar(option.id);
+            RefreshAvatarLibrary();
+
+            if (wasSelected)
+            {
+                ApplyAvatarOption(FirstSkeletonOption(), false);
+            }
+
+            ShowTransientMessage(StudioL10n.ToastAvatarUninstalled(option.title));
+            RefreshUi();
         }
 
         private void SelectInitialAvatar()
         {
             var storedSelection = PlayerPrefs.GetString("Odoro.SelectedAvatarOption", string.Empty);
-            var option = FindAvatarOption(storedSelection) ?? FirstAvatarOption() ?? FirstSkeletonOption();
+            var storedOption = FindAvatarOption(storedSelection);
+            var option = storedOption != null && storedOption.isInstalled
+                ? storedOption
+                : FirstAvatarOption() ?? FirstSkeletonOption();
             ApplyAvatarOption(option, false);
         }
 
@@ -474,7 +527,7 @@ namespace Odoro
         {
             for (var optionIndex = 0; optionIndex < avatarOptions.Count; optionIndex += 1)
             {
-                if (avatarOptions[optionIndex].UsesAvatar)
+                if (avatarOptions[optionIndex].UsesAvatar && avatarOptions[optionIndex].isInstalled)
                 {
                     return avatarOptions[optionIndex];
                 }
@@ -514,6 +567,12 @@ namespace Odoro
                 return;
             }
 
+            if (option.UsesAvatar && !option.isInstalled)
+            {
+                InstallAvatarOption(option.id);
+                return;
+            }
+
             ApplyAvatarOption(option, true);
         }
 
@@ -538,6 +597,13 @@ namespace Odoro
                     ShowTransientMessage(option.title);
                 }
 
+                RefreshUi();
+                return;
+            }
+
+            if (!option.isInstalled)
+            {
+                ShowTransientMessage(StudioL10n.ModelNotInstalled);
                 RefreshUi();
                 return;
             }
@@ -764,6 +830,9 @@ namespace Odoro
                     subtitle = option.subtitle,
                     isSelected = selectedAvatarOption != null && selectedAvatarOption.id == option.id,
                     usesAvatar = option.UsesAvatar,
+                    isInstalled = option.isInstalled,
+                    canInstall = option.canInstall,
+                    canUninstall = option.canUninstall,
                 });
             }
 

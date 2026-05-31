@@ -36,6 +36,7 @@ namespace Odoro
         public static string ModelSelectionSubtitle => Get("model-selection.subtitle");
         public static string ModelSelected => Get("model-selection.selected");
         public static string ModelTapToUse => Get("model-selection.tap-to-use");
+        public static string ModelNotInstalled => Get("model-selection.not-installed");
         public static string ModelSkeletonPreview => Get("model-selection.skeleton-preview");
         public static string StageTitleFallback => Get("stage.title-fallback");
         public static string StageNoClip => Get("stage.no-clip");
@@ -59,6 +60,9 @@ namespace Odoro
         public static string ButtonPause => Get("button.pause");
         public static string ButtonSettings => Get("button.settings");
         public static string ButtonDone => Get("button.done");
+        public static string ButtonUse => Get("button.use");
+        public static string ButtonInstall => Get("button.install");
+        public static string ButtonUninstall => Get("button.uninstall");
         public static string ButtonSkeletonOn => Get("button.skeleton-on");
         public static string ButtonSkeletonOff => Get("button.skeleton-off");
         public static string ArchiveRootCaption => Get("archive.root-caption");
@@ -85,6 +89,8 @@ namespace Odoro
         public static string ToastAvatarMissing => Get("toast.avatar-missing");
         public static string ToastAvatarLoading => Get("toast.avatar-loading");
         public static string ToastAvatarLoaded(string name) => Get("toast.avatar-loaded", name);
+        public static string ToastAvatarInstalled(string name) => Get("toast.avatar-installed", name);
+        public static string ToastAvatarUninstalled(string name) => Get("toast.avatar-uninstalled", name);
         public static string ToastAvatarImportFailed(string error) => Get("toast.avatar-import-failed", error);
         public static string ToastAlreadySaved => Get("toast.already-saved");
         public static string ToastRecordingStarted => Get("toast.recording-started");

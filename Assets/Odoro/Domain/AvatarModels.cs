@@ -17,6 +17,8 @@ namespace Odoro
         public string subtitle;
         public string resourcePath;
         public bool isInstalled;
+        public bool canInstall;
+        public bool canUninstall;
 
         public bool UsesAvatar => kind != StageAvatarOptionKind.ProceduralSkeleton;
     }

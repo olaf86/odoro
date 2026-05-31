@@ -344,6 +344,30 @@ MonoBehaviour:
     m_Localized: 'Avatar import failed: {0}'
     m_Metadata:
       m_Items: []
+  - m_Id: 4081613028712457
+    m_Localized: Not installed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712458
+    m_Localized: Use
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712459
+    m_Localized: Install
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712460
+    m_Localized: Uninstall
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712461
+    m_Localized: 'Installed avatar model: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 4081613028712462
+    m_Localized: 'Uninstalled avatar model: {0}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

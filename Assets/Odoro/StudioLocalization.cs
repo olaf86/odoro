@@ -85,9 +85,7 @@ namespace Odoro
         public static string ToastTakeSaved => Get("toast.take-saved");
         public static string ToastSaveFailed => Get("toast.save-failed");
         public static string ToastNeedCaptureFirst => Get("toast.need-capture-first");
-        public static string ToastAvatarActive => Get("toast.avatar-active");
         public static string ToastAvatarMissing => Get("toast.avatar-missing");
-        public static string ToastAvatarLoading => Get("toast.avatar-loading");
         public static string ToastAvatarLoaded(string name) => Get("toast.avatar-loaded", name);
         public static string ToastAvatarInstalled(string name) => Get("toast.avatar-installed", name);
         public static string ToastAvatarUninstalled(string name) => Get("toast.avatar-uninstalled", name);

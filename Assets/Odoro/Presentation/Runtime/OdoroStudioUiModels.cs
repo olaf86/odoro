@@ -87,8 +87,6 @@ namespace Odoro
     public sealed class ModelSelectionScreenSnapshot
     {
         public IReadOnlyList<StageAvatarOptionSnapshot> options;
-        public string selectedOptionId;
-        public bool isBusy;
     }
 
     public sealed class StageAvatarOptionSnapshot

@@ -199,10 +199,6 @@ MonoBehaviour:
     m_Localized: Record a take first.
     m_Metadata:
       m_Items: []
-  - m_Id: 242212908
-    m_Localized: Default humanoid avatar is active.
-    m_Metadata:
-      m_Items: []
   - m_Id: 242212909
     m_Localized: Place a humanoid prefab at Resources/Odoro/DefaultAvatar to enable
       avatar preview.
@@ -330,10 +326,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 4081613028712451
     m_Localized: Skeleton preview
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4081613028712454
-    m_Localized: Loading avatar model...
     m_Metadata:
       m_Items: []
   - m_Id: 4081613028712455

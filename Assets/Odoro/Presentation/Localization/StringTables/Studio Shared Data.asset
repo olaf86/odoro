@@ -195,10 +195,6 @@ MonoBehaviour:
     m_Key: toast.need-capture-first
     m_Metadata:
       m_Items: []
-  - m_Id: 242212908
-    m_Key: toast.avatar-active
-    m_Metadata:
-      m_Items: []
   - m_Id: 242212909
     m_Key: toast.avatar-missing
     m_Metadata:
@@ -325,10 +321,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 4081613028712451
     m_Key: model-selection.skeleton-preview
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4081613028712454
-    m_Key: toast.avatar-loading
     m_Metadata:
       m_Items: []
   - m_Id: 4081613028712455

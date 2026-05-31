@@ -202,10 +202,6 @@ MonoBehaviour:
     m_Localized: "\u307E\u305A\u306F\u30C6\u30A4\u30AF\u3092\u9332\u753B\u3057\u3066\u304F\u3060\u3055\u3044\u3002"
     m_Metadata:
       m_Items: []
-  - m_Id: 242212908
-    m_Localized: "\u6A19\u6E96 humanoid \u30A2\u30D0\u30BF\u30FC\u304C\u6709\u52B9\u3067\u3059\u3002"
-    m_Metadata:
-      m_Items: []
   - m_Id: 242212909
     m_Localized: "\u30A2\u30D0\u30BF\u30FC\u30D7\u30EC\u30D3\u30E5\u30FC\u3092\u6709\u52B9\u306B\u3059\u308B\u306B\u306F
       Resources/Odoro/DefaultAvatar \u306B humanoid prefab \u3092\u7F6E\u3044\u3066\u304F\u3060\u3055\u3044\u3002"
@@ -334,10 +330,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 4081613028712451
     m_Localized: "\u30B9\u30B1\u30EB\u30C8\u30F3\u30D7\u30EC\u30D3\u30E5\u30FC"
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4081613028712454
-    m_Localized: "\u30A2\u30D0\u30BF\u30FC\u30E2\u30C7\u30EB\u3092\u8AAD\u307F\u8FBC\u307F\u4E2D\u3067\u3059..."
     m_Metadata:
       m_Items: []
   - m_Id: 4081613028712455

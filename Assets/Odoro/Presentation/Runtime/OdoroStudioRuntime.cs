@@ -46,7 +46,6 @@ namespace Odoro
         private string debugLastSavedPath;
         private string debugReplayPath;
         private string debugLastShareStatus;
-        private bool avatarImportInProgress;
         private bool selectedClipIsGeneratedMockStageClip;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -368,8 +367,6 @@ namespace Odoro
                 modelSelection = new ModelSelectionScreenSnapshot
                 {
                     options = BuildAvatarOptionSnapshots(),
-                    selectedOptionId = selectedAvatarOption?.id,
-                    isBusy = avatarImportInProgress,
                 },
                 debug = BuildDebugHudSnapshot(),
             });
@@ -470,11 +467,6 @@ namespace Odoro
 
         private void InstallAvatarOption(string optionId)
         {
-            if (avatarImportInProgress)
-            {
-                return;
-            }
-
             var option = FindAvatarOption(optionId);
             if (option == null || !option.canInstall)
             {
@@ -489,11 +481,6 @@ namespace Odoro
 
         private void UninstallAvatarOption(string optionId)
         {
-            if (avatarImportInProgress)
-            {
-                return;
-            }
-
             var option = FindAvatarOption(optionId);
             if (option == null || !option.canUninstall)
             {
@@ -562,7 +549,7 @@ namespace Odoro
         private void SelectAvatarOption(string optionId)
         {
             var option = FindAvatarOption(optionId);
-            if (option == null || avatarImportInProgress)
+            if (option == null)
             {
                 return;
             }
@@ -610,9 +597,6 @@ namespace Odoro
 
             try
             {
-                avatarImportInProgress = true;
-                ShowTransientMessage(StudioL10n.ToastAvatarLoading);
-
                 avatarView = option.kind switch
                 {
                     StageAvatarOptionKind.ResourcesPrefab => HumanoidAvatarView.TryCreateFromResources(option.resourcePath),
@@ -638,7 +622,6 @@ namespace Odoro
             }
             finally
             {
-                avatarImportInProgress = false;
                 RefreshUi();
             }
         }
@@ -784,11 +767,6 @@ namespace Odoro
 
         private string StageModeLabel()
         {
-            if (avatarImportInProgress)
-            {
-                return StudioL10n.ToastAvatarLoading;
-            }
-
             if (ShouldShowAvatar())
             {
                 return selectedAvatarOption?.title ?? StudioL10n.AvatarLabel;

@@ -21,7 +21,6 @@ namespace Odoro
             remove => localeChanged -= value;
         }
 
-        public static string CaptureTitle => Get("capture.title");
         public static string RecordingSessionTitle => Get("recording-session.title");
         public static string RecordingSessionHint => Get("recording-session.hint");
         public static string SessionBpmTitle => Get("session.bpm");
@@ -42,7 +41,6 @@ namespace Odoro
         public static string StageNoClip => Get("stage.no-clip");
         public static string AvatarLabel => Get("stage.avatar-label");
         public static string SkeletonLabel => Get("stage.skeleton-label");
-        public static string CaptureHint => Get("capture.hint");
         public static string CaptureLatestClipReady => Get("capture.latest-ready");
         public static string CapturePromptToRecord => Get("capture.prompt-record");
         public static string StageHintAvatarActive => Get("stage.hint-avatar-active");
@@ -103,11 +101,6 @@ namespace Odoro
                 CaptureMode.ImportedVideo => Get("capture-mode.imported-video"),
                 _ => Get("capture-mode.mock"),
             };
-        }
-
-        public static string RecordingProgress(float current, float duration)
-        {
-            return Get("format.recording-progress", current, duration);
         }
 
         public static string RecordingBeatProgress(int currentBeat, int totalBeats)

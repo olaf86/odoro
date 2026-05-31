@@ -18,10 +18,6 @@ MonoBehaviour:
   m_Metadata:
     m_Items: []
   m_TableData:
-  - m_Id: 238018560
-    m_Localized: Capture
-    m_Metadata:
-      m_Items: []
   - m_Id: 242212864
     m_Localized: Recording Session
     m_Metadata:
@@ -76,10 +72,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 242212877
     m_Localized: Skeleton
-    m_Metadata:
-      m_Items: []
-  - m_Id: 242212878
-    m_Localized: AR capture preview with session controls.
     m_Metadata:
       m_Items: []
   - m_Id: 242212879
@@ -230,10 +222,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 242212916
     m_Localized: Mock Full Body
-    m_Metadata:
-      m_Items: []
-  - m_Id: 242212917
-    m_Localized: Recording {0:0.00}s / {1:0.00}s
     m_Metadata:
       m_Items: []
   - m_Id: 242212918

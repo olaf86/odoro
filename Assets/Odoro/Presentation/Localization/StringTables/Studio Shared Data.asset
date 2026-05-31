@@ -15,10 +15,6 @@ MonoBehaviour:
   m_TableCollectionName: Studio
   m_TableCollectionNameGuidString: 811f3585d647c41f8812ecf0177b840b
   m_Entries:
-  - m_Id: 238018560
-    m_Key: capture.title
-    m_Metadata:
-      m_Items: []
   - m_Id: 242212864
     m_Key: recording-session.title
     m_Metadata:
@@ -73,10 +69,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 242212877
     m_Key: stage.skeleton-label
-    m_Metadata:
-      m_Items: []
-  - m_Id: 242212878
-    m_Key: capture.hint
     m_Metadata:
       m_Items: []
   - m_Id: 242212879
@@ -225,10 +217,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 242212916
     m_Key: capture-mode.mock
-    m_Metadata:
-      m_Items: []
-  - m_Id: 242212917
-    m_Key: format.recording-progress
     m_Metadata:
       m_Items: []
   - m_Id: 242212918

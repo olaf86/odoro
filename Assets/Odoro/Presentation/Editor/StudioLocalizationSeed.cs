@@ -18,7 +18,6 @@ namespace Odoro.Editor
     {
         public static readonly StudioLocalizationSeedEntry[] Entries =
         {
-            new("capture.title", "Capture", "キャプチャ"),
             new("recording-session.title", "Recording Session", "録画セッション"),
             new("recording-session.hint", "Adjust BPM, meter, and count-in before the next take.", "次のテイクの前に BPM、拍子、カウントインを調整します。"),
             new("session.bpm", "BPM", "BPM"),
@@ -39,7 +38,6 @@ namespace Odoro.Editor
             new("stage.no-clip", "No clip loaded", "クリップが読み込まれていません"),
             new("stage.avatar-label", "Avatar", "アバター"),
             new("stage.skeleton-label", "Skeleton", "スケルトン"),
-            new("capture.hint", "AR capture preview with session controls.", "セッション設定付きの AR キャプチャプレビューです。"),
             new("capture.latest-ready", "Latest clip is ready. Open Stage to preview the take.", "最新のクリップを再生できます。Stage を開いて確認してください。"),
             new("capture.prompt-record", "Tap Record to capture the first take.", "Record を押して最初のテイクを録画してください。"),
             new("stage.hint-avatar-active", "Humanoid avatar preview is active.", "humanoid アバタープレビューが有効です。"),
@@ -88,7 +86,6 @@ namespace Odoro.Editor
             new("capture-mode.front-upper", "Front Upper", "Front Upper"),
             new("capture-mode.imported-video", "Imported Video", "動画インポート"),
             new("capture-mode.mock", "Mock Full Body", "Mock Full Body"),
-            new("format.recording-progress", "Recording {0:0.00}s / {1:0.00}s", "録画中 {0:0.00}s / {1:0.00}s"),
             new("format.capture-beat-summary", "{0} bars • {1:0} BPM", "{0} 小節 • {1:0} BPM"),
             new("format.clip-summary", "{0:0.00}s • {1} frames", "{0:0.00}s • {1} フレーム"),
             new("format.recording-session-summary", "{0} BPM • {1}/{2} • {3} bars", "{0} BPM • {1}/{2} • {3} 小節"),

@@ -61,6 +61,7 @@ jobs:
           testMode: editmode
           checkName: EditMode tests
           artifactsPath: artifacts/test-results/editmode
+          customParameters: '-assemblyNames Odoro.EditMode.Tests'
 
       - name: Upload EditMode test artifacts
         if: always()

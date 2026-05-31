@@ -32,6 +32,7 @@ namespace Odoro
         public Action startDebugFrameCapture;
         public Action stopDebugFrameCapture;
         public Action shareDebugMotionFrames;
+        public Action cycleMockMotionPattern;
     }
 
     public sealed class OdoroStudioUiSnapshot
@@ -95,7 +96,6 @@ namespace Odoro
         public string subtitle;
         public bool isSelected;
         public bool usesAvatar;
-        public bool requiresDownload;
     }
 
     public sealed class LibraryScreenSnapshot
@@ -109,7 +109,9 @@ namespace Odoro
         public bool isVisible;
         public bool isCapturing;
         public bool canShare;
+        public bool canCycleMockMotionPattern;
         public string[] lines;
         public string captureButtonLabel;
+        public string mockMotionPatternButtonLabel;
     }
 }

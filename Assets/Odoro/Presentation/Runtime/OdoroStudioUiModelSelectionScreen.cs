@@ -97,9 +97,7 @@ namespace Odoro
             var status = CreatePillLabel();
             status.text = option.isSelected
                 ? StudioL10n.ModelSelected
-                : option.requiresDownload
-                    ? StudioL10n.ModelTapToDownload
-                    : option.usesAvatar
+                : option.usesAvatar
                     ? StudioL10n.ModelTapToUse
                     : StudioL10n.ModelSkeletonPreview;
             status.style.marginTop = 10f;

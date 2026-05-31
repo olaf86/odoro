@@ -36,7 +36,6 @@ namespace Odoro
         public static string ModelSelectionSubtitle => Get("model-selection.subtitle");
         public static string ModelSelected => Get("model-selection.selected");
         public static string ModelTapToUse => Get("model-selection.tap-to-use");
-        public static string ModelTapToDownload => Get("model-selection.tap-to-download");
         public static string ModelSkeletonPreview => Get("model-selection.skeleton-preview");
         public static string StageTitleFallback => Get("stage.title-fallback");
         public static string StageNoClip => Get("stage.no-clip");
@@ -85,7 +84,6 @@ namespace Odoro
         public static string ToastAvatarActive => Get("toast.avatar-active");
         public static string ToastAvatarMissing => Get("toast.avatar-missing");
         public static string ToastAvatarLoading => Get("toast.avatar-loading");
-        public static string ToastAvatarDownloading(string name) => Get("toast.avatar-downloading", name);
         public static string ToastAvatarLoaded(string name) => Get("toast.avatar-loaded", name);
         public static string ToastAvatarImportFailed(string error) => Get("toast.avatar-import-failed", error);
         public static string ToastAlreadySaved => Get("toast.already-saved");

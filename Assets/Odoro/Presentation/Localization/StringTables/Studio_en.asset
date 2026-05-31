@@ -317,8 +317,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 4081613028712448
-    m_Localized: Choose skeleton preview, a bundled humanoid prefab, or a prepared
-      GCS model.
+    m_Localized: Choose skeleton preview or a bundled humanoid prefab.
     m_Metadata:
       m_Items: []
   - m_Id: 4081613028712449
@@ -343,14 +342,6 @@ MonoBehaviour:
       m_Items: []
   - m_Id: 4081613028712456
     m_Localized: 'Avatar import failed: {0}'
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4085605246951424
-    m_Localized: Tap to download
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4085605251145728
-    m_Localized: 'Downloading avatar model: {0}'
     m_Metadata:
       m_Items: []
   references:

@@ -13,6 +13,7 @@ namespace Odoro
         private readonly Label bodyLabel;
         private readonly Button hideButton;
         private readonly Button captureButton;
+        private readonly Button mockPatternButton;
         private readonly Button shareButton;
 
         public DebugHudView(VisualElement parent, OdoroStudioUiActions actions)
@@ -69,6 +70,12 @@ namespace Odoro
             captureButton.style.marginTop = 12f;
             panel.Add(captureButton);
 
+            mockPatternButton = new Button(() => actions.cycleMockMotionPattern?.Invoke());
+            StyleButton(mockPatternButton);
+            mockPatternButton.style.height = 48f;
+            mockPatternButton.style.marginTop = 8f;
+            panel.Add(mockPatternButton);
+
             shareButton = new Button(() => actions.shareDebugMotionFrames?.Invoke()) { text = "Share MotionFrames" };
             StyleButton(shareButton);
             shareButton.style.height = 48f;
@@ -98,6 +105,8 @@ namespace Odoro
 
             bodyLabel.text = snapshot.lines == null ? string.Empty : string.Join("\n", snapshot.lines);
             captureButton.text = snapshot.captureButtonLabel;
+            mockPatternButton.text = snapshot.mockMotionPatternButtonLabel;
+            mockPatternButton.style.display = snapshot.canCycleMockMotionPattern ? DisplayStyle.Flex : DisplayStyle.None;
             captureButton.clicked -= StopCapture;
             captureButton.clicked -= StartCapture;
             if (snapshot.isCapturing)

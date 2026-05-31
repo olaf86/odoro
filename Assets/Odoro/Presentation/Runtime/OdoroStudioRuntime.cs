@@ -47,7 +47,6 @@ namespace Odoro
         private string debugReplayPath;
         private string debugLastShareStatus;
         private bool avatarImportInProgress;
-        private bool avatarDownloadInProgress;
         private bool selectedClipIsGeneratedMockStageClip;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -279,6 +278,7 @@ namespace Odoro
                 startDebugFrameCapture = StartDebugFrameCapture,
                 stopDebugFrameCapture = () => StopDebugFrameCapture(true),
                 shareDebugMotionFrames = ShareDebugMotionFrames,
+                cycleMockMotionPattern = CycleMockMotionPattern,
             });
         }
 
@@ -367,7 +367,7 @@ namespace Odoro
                 {
                     options = BuildAvatarOptionSnapshots(),
                     selectedOptionId = selectedAvatarOption?.id,
-                    isBusy = avatarImportInProgress || avatarDownloadInProgress,
+                    isBusy = avatarImportInProgress,
                 },
                 debug = BuildDebugHudSnapshot(),
             });
@@ -422,7 +422,8 @@ namespace Odoro
 
             var sourceClip = MockMotionSource.CreateClip(
                 recordingContext.FixedCaptureDuration,
-                MotionSourceActivity.Recording
+                MotionSourceActivity.Recording,
+                motionSource is MockMotionSource mockSource ? mockSource.Pattern : MockMotionPattern.TPose
             );
             var playbackClip = MotionPlaybackClipPreparer.Prepare(sourceClip, CaptureMode.Mock);
             selectedTake = null;
@@ -508,43 +509,15 @@ namespace Odoro
         private void SelectAvatarOption(string optionId)
         {
             var option = FindAvatarOption(optionId);
-            if (option == null || avatarImportInProgress || avatarDownloadInProgress)
+            if (option == null || avatarImportInProgress)
             {
-                return;
-            }
-
-            if (option.RequiresDownload)
-            {
-                DownloadAvatarOption(option);
                 return;
             }
 
             ApplyAvatarOption(option, true);
         }
 
-        private async void DownloadAvatarOption(StageAvatarOption option)
-        {
-            try
-            {
-                avatarDownloadInProgress = true;
-                ShowTransientMessage(StudioL10n.ToastAvatarDownloading(option.title));
-                var installedOption = await avatarAssetStore.InstallDownloadableAvatarAsync(option);
-                RefreshAvatarLibrary();
-                ApplyAvatarOption(FindAvatarOption(installedOption.id) ?? installedOption, true);
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-                ShowTransientMessage(StudioL10n.ToastAvatarImportFailed(exception.Message));
-            }
-            finally
-            {
-                avatarDownloadInProgress = false;
-                RefreshUi();
-            }
-        }
-
-        private async void ApplyAvatarOption(StageAvatarOption option, bool showResult)
+        private void ApplyAvatarOption(StageAvatarOption option, bool showResult)
         {
             if (option == null)
             {
@@ -577,8 +550,6 @@ namespace Odoro
                 avatarView = option.kind switch
                 {
                     StageAvatarOptionKind.ResourcesPrefab => HumanoidAvatarView.TryCreateFromResources(option.resourcePath),
-                    StageAvatarOptionKind.LocalDevelopmentGlb => await GltfAvatarLoader.LoadAsync(option.runtimeAssetPath, option.title),
-                    StageAvatarOptionKind.DownloadableGlb => await GltfAvatarLoader.LoadAsync(option.runtimeAssetPath, option.title),
                     _ => null,
                 };
 
@@ -752,11 +723,6 @@ namespace Odoro
                 return StudioL10n.ToastAvatarLoading;
             }
 
-            if (avatarDownloadInProgress)
-            {
-                return StudioL10n.ToastAvatarDownloading(selectedAvatarOption?.title ?? StudioL10n.AvatarLabel);
-            }
-
             if (ShouldShowAvatar())
             {
                 return selectedAvatarOption?.title ?? StudioL10n.AvatarLabel;
@@ -798,7 +764,6 @@ namespace Odoro
                     subtitle = option.subtitle,
                     isSelected = selectedAvatarOption != null && selectedAvatarOption.id == option.id,
                     usesAvatar = option.UsesAvatar,
-                    requiresDownload = option.RequiresDownload,
                 });
             }
 
@@ -933,6 +898,7 @@ namespace Odoro
                 DebugJointLabel(OdoroJointName.RightWrist),
                 $"Replay file: {(HasProjectReplayFile() ? "found" : "missing")}",
                 "Playback pose: avatar-space mirror",
+                $"Mock pattern: {MockMotionPatternLabel()}",
             });
 
             if (!string.IsNullOrEmpty(debugReplayPath))
@@ -961,8 +927,10 @@ namespace Odoro
                 isVisible = debugHudVisible,
                 isCapturing = debugFrameCaptureActive,
                 canShare = DebugFileSharer.IsAvailable && HasShareableDebugMotionFile(),
+                canCycleMockMotionPattern = motionSource is MockMotionSource,
                 lines = lines.ToArray(),
                 captureButtonLabel = debugFrameCaptureActive ? "Stop & Save MotionFrames" : "Save Next 10s MotionFrames",
+                mockMotionPatternButtonLabel = $"Mock: {MockMotionPatternLabel()}",
             };
         }
 
@@ -986,6 +954,22 @@ namespace Odoro
         private void HideDebugHud()
         {
             debugHudVisible = false;
+            RefreshUi();
+        }
+
+        private void CycleMockMotionPattern()
+        {
+            if (motionSource is not MockMotionSource mockSource)
+            {
+                return;
+            }
+
+            mockSource.CyclePattern();
+            selectedClipIsGeneratedMockStageClip = false;
+            EnsureMockStagePlaybackClip();
+            latestPreviewFrame = MockMotionSource.CreateFrame(0f, MotionSourceActivity.Preview, mockSource.Pattern);
+            capturePreviewSkeletonFrameReady = true;
+            ShowTransientMessage($"Mock pattern: {mockSource.PatternLabel}");
             RefreshUi();
         }
 
@@ -1094,6 +1078,11 @@ namespace Odoro
             }
 
             return $"{Time.unscaledTime - lastMotionFrameReceivedAt:0.00}s";
+        }
+
+        private string MockMotionPatternLabel()
+        {
+            return motionSource is MockMotionSource mockSource ? mockSource.PatternLabel : "--";
         }
 
         private string DebugJointLabel(OdoroJointName jointName)

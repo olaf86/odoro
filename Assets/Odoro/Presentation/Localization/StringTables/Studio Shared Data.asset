@@ -339,14 +339,6 @@ MonoBehaviour:
     m_Key: toast.avatar-import-failed
     m_Metadata:
       m_Items: []
-  - m_Id: 4085605246951424
-    m_Key: model-selection.tap-to-download
-    m_Metadata:
-      m_Items: []
-  - m_Id: 4085605251145728
-    m_Key: toast.avatar-downloading
-    m_Metadata:
-      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
